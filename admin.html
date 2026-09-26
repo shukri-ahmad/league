@@ -147,22 +147,19 @@
 </div>
 
 <script type="module">
-  // 👇 MUST UPDATE THIS WITH YOUR NEW FIREBASE DB KEYS! 👇
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
   import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // INJECTED SUPER ADMIN UID
   const SUPER_ADMIN_UID = "fTWjYGD7I3X1HPhUaooeuJhNfOO2"; 
 
   const firebaseConfig = {
-    // ⚠️ PASTE YOUR NEW FIREBASE CONFIG DETAILS HERE
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_PROJECT.firebasestorage.app",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdefg"
+    apiKey: "AIzaSyDiJ0mtythPveASgwkQy_CdUEEAiDMVn9A",
+    authDomain: "makerobot-league.firebaseapp.com",
+    projectId: "makerobot-league",
+    storageBucket: "makerobot-league.firebasestorage.app",
+    messagingSenderId: "535133602491",
+    appId: "1:535133602491:web:f461c378707863d8f9df9e"
   };
 
   const app = initializeApp(firebaseConfig);
