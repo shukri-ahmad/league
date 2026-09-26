@@ -478,26 +478,17 @@
                   }
               }
 
-              if (match.teamB_id === "BYE") {
-                  html += `
-                  <tr>
-                      <td style="font-weight:bold;">#${index+1}</td>
-                      <td class="team-name">${match.teamA_name} <span style="color:#8b949e; font-size:12px;">(BYE)</span></td>
-                      <td><span style="color: var(--neon-green);">+2 PTS</span></td>
-                  </tr><tr class="divider-row"><td colspan="3"></td></tr>`;
-              } else {
-                  html += `
-                  <tr>
-                      <td rowspan="2" style="font-weight:bold;">#${index+1}</td>
-                      <td class="team-name">${match.teamA_name} ${aStatus}</td>
-                      <td><input type="number" min="0" value="${aBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'A', this.value)"></td>
-                  </tr>
-                  <tr>
-                      <td class="team-name">${match.teamB_name} ${bStatus}</td>
-                      <td><input type="number" min="0" value="${bBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'B', this.value)"></td>
-                  </tr>
-                  <tr class="divider-row"><td colspan="3"></td></tr>`;
-              }
+              html += `
+              <tr>
+                  <td rowspan="2" style="font-weight:bold;">#${index+1}</td>
+                  <td class="team-name">${match.teamA_name} ${aStatus}</td>
+                  <td><input type="number" min="0" value="${aBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'A', this.value)"></td>
+              </tr>
+              <tr>
+                  <td class="team-name">${match.teamB_name} ${bStatus}</td>
+                  <td><input type="number" min="0" value="${bBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'B', this.value)"></td>
+              </tr>
+              <tr class="divider-row"><td colspan="3"></td></tr>`;
           });
           html += `</tbody></table>`;
           container.innerHTML = html;
@@ -583,17 +574,10 @@
               let teamA = teams[firstHalf[i]];
               let teamB = teams[secondHalf[i]];
               
-              if (teamB.isBye || teamA.isBye) {
-                  let realTeam = teamA.isBye ? teamB : teamA;
+              // If either team is the BYE team, do NOT create a match entry
+              if (!teamB.isBye && !teamA.isBye) {
                   await addDoc(collection(db, "games", currentGameId, "matches"), {
-                      round: round, 
-                      teamA_id: realTeam.id, teamA_name: realTeam.name,
-                      teamB_id: "BYE", teamB_name: "[ AUTOMATIC BYE ]", 
-                      teamA_balls: 5, teamB_balls: 10 
-                  });
-              } else {
-                  await addDoc(collection(db, "games", currentGameId, "matches"), {
-                      round: round, 
+                      round: round, // internal sorting
                       teamA_id: teamA.id, teamA_name: teamA.name,
                       teamB_id: teamB.id, teamB_name: teamB.name, 
                       teamA_balls: null, teamB_balls: null
@@ -624,8 +608,9 @@
           const match = docSnap.data();
           if(match.teamA_balls !== null && match.teamB_balls !== null) {
               let aPts = 0, bPts = 0;
-              if(match.teamA_balls < match.teamB_balls) { aPts = 2; bPts = 0; }
-              else if(match.teamB_balls < match.teamA_balls) { aPts = 0; bPts = 2; }
+              // WIN = 3 PTS, DRAW = 1 PT, LOSS = 0 PTS
+              if(match.teamA_balls < match.teamB_balls) { aPts = 3; bPts = 0; }
+              else if(match.teamB_balls < match.teamA_balls) { aPts = 0; bPts = 3; }
               else { aPts = 1; bPts = 1; }
 
               if(teamStats[match.teamA_id]) { teamStats[match.teamA_id].points += aPts; teamStats[match.teamA_id].balls += match.teamA_balls; }
