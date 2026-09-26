@@ -127,24 +127,21 @@
     </div>
 
 <script type="module">
-    // 👇 MUST UPDATE THIS WITH YOUR NEW FIREBASE DB KEYS! 👇
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     const firebaseConfig = {
-      // ⚠️ PASTE YOUR NEW FIREBASE CONFIG DETAILS HERE
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT",
-      storageBucket: "YOUR_PROJECT.firebasestorage.app",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcdefg"
+      apiKey: "AIzaSyDiJ0mtythPveASgwkQy_CdUEEAiDMVn9A",
+      authDomain: "makerobot-league.firebaseapp.com",
+      projectId: "makerobot-league",
+      storageBucket: "makerobot-league.firebasestorage.app",
+      messagingSenderId: "535133602491",
+      appId: "1:535133602491:web:f461c378707863d8f9df9e"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
-    // If already logged in, bypass the login screen and go straight to admin
     onAuthStateChanged(auth, user => {
         if (user) {
             window.location.href = "admin.html";
@@ -168,13 +165,11 @@
 
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            // If successful, onAuthStateChanged will redirect automatically
         } catch (error) {
             loginBtn.innerText = "AUTHENTICATE";
             loginBtn.disabled = false;
             errorDiv.style.display = "block";
             
-            // Make the error messages a bit more human-readable
             if (error.code === 'auth/invalid-credential') {
                 errorDiv.innerText = "Access Denied: Incorrect email or password.";
             } else if (error.code === 'auth/too-many-requests') {
@@ -185,7 +180,6 @@
         }
     };
 
-    // Allow pressing "Enter" on the password field to submit
     document.getElementById("passwordInput").addEventListener("keypress", function(event) {
         if (event.key === "Enter") {
             event.preventDefault();
