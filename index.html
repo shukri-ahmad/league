@@ -42,7 +42,6 @@
         .formula-text { text-align: center; font-size: 14px; color: #8b949e; margin-top: -10px; margin-bottom: 20px; font-weight: bold;}
         
         .history-section-title { margin-top: 50px; margin-bottom: 10px; text-align: left; color: var(--league-accent); border-bottom: 1px solid #30363d; padding-bottom: 10px; font-size: 20px;}
-        .public-round-header { background: #0d1117; padding: 10px; margin-top: 30px; border-radius: 4px; border-left: 4px solid var(--league-accent); color: white; font-family: 'Orbitron', sans-serif; font-weight: bold; text-align: left; border-top: 1px solid #30363d; border-right: 1px solid #30363d; border-bottom: 1px solid #30363d;}
         .match-divider td { background-color: #30363d; height: 1px; padding: 0; border: none; opacity: 0.5; }
         
         .tie-badge { color: var(--red-gear); font-size: 11px; display: block; font-weight: bold; margin-top: 5px;}
@@ -90,7 +89,7 @@
         <tbody id="leaderboard-body"><tr><td colspan="4">AWAITING DATA...</td></tr></tbody>
     </table>
 
-    <h3 class="history-section-title">LEAGUE SCHEDULE</h3>
+    <h3 class="history-section-title">CONTINUOUS MATCH SCHEDULE</h3>
     <div id="matches-history-container">
         <p style="text-align: center; color: #8b949e;">Awaiting schedule generation...</p>
     </div>
@@ -101,12 +100,13 @@
   import { getFirestore, collection, doc, onSnapshot, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
-    apiKey: "AIzaSyDiJ0mtythPveASgwkQy_CdUEEAiDMVn9A",
-    authDomain: "makerobot-league.firebaseapp.com",
-    projectId: "makerobot-league",
-    storageBucket: "makerobot-league.firebasestorage.app",
-    messagingSenderId: "535133602491",
-    appId: "1:535133602491:web:f461c378707863d8f9df9e"
+    // ⚠️ PASTE YOUR NEW FIREBASE CONFIG DETAILS HERE
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.firebasestorage.app",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcdefg"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -116,7 +116,6 @@
   let unsubTeams = null;
   let unsubMatches = null;
 
-  // --- AUDIO SYNTHESIZER FOR VIEWERS ---
   let audioCtx = null;
   function getAudioCtx() {
       if (!audioCtx) {
@@ -157,8 +156,6 @@
       if (ctx && ctx.state === 'suspended') ctx.resume();
   }, { once: true });
 
-
-  // --- TIMER LOGIC FOR VIEWER ---
   let localTimerInterval = null;
   let endSoundPlayed = false;
   let lastTickSecond = -1;
@@ -297,65 +294,59 @@
               return;
           }
 
-          let roundsData = {};
-          let maxRound = 0;
+          let currentMatchesList = [];
 
           snapshot.forEach(docSnap => {
               const match = docSnap.data();
-              if(match.round > maxRound) maxRound = match.round;
-              if(!roundsData[match.round]) roundsData[match.round] = [];
-              roundsData[match.round].push(match);
+              match.id = docSnap.id;
+              currentMatchesList.push(match);
           });
 
-          for (let r = 1; r <= maxRound; r++) {
-              if (!roundsData[r]) continue;
+          // RENDER AS ONE CONTINUOUS TABLE
+          let html = `<table><thead><tr><th>MATCH</th><th>TEAM A</th><th>SCORE</th><th>TEAM B</th></tr></thead><tbody>`;
+          
+          currentMatchesList.forEach((match, index) => {
+              let aBalls = match.teamA_balls === null ? "-" : match.teamA_balls;
+              let bBalls = match.teamB_balls === null ? "-" : match.teamB_balls;
               
-              let html = `<div class="public-round-header">MATCHDAY ${r}</div>`;
-              html += `<table><thead><tr><th>MATCH</th><th>TEAM A</th><th>SCORE</th><th>TEAM B</th></tr></thead><tbody>`;
-              
-              roundsData[r].forEach((match, index) => {
-                  let aBalls = match.teamA_balls === null ? "-" : match.teamA_balls;
-                  let bBalls = match.teamB_balls === null ? "-" : match.teamB_balls;
-                  
-                  let scoreRender = `<span style="color:#8b949e;">[ VS ]</span>`;
-                  let aColor = "white", bColor = "white";
+              let scoreRender = `<span style="color:#8b949e;">[ VS ]</span>`;
+              let aColor = "white", bColor = "white";
 
-                  if (match.teamB_id === "BYE") {
-                      html += `
-                      <tr>
-                          <td style="font-family: 'Orbitron', sans-serif; font-weight: bold; width: 15%;">#${index+1}</td>
-                          <td class="team-name" style="color: var(--neon-green); width: 35%; text-align: right; padding-right:15px;">${match.teamA_name}</td>
-                          <td style="font-weight: bold; font-family: 'Orbitron', sans-serif; width: 15%; color: var(--neon-green);">+2 PTS</td>
-                          <td class="team-name" style="color: #8b949e; width: 35%;">( BYE )</td>
-                      </tr>
-                      <tr class="match-divider"><td colspan="4"></td></tr>`;
-                      return; 
-                  }
-
-                  if (match.teamA_balls !== null && match.teamB_balls !== null) {
-                      scoreRender = `<span style="font-weight:900;">${aBalls} - ${bBalls}</span>`;
-                      if (match.teamA_balls < match.teamB_balls) {
-                          aColor = "var(--neon-green)"; bColor = "var(--red-gear)";
-                      } else if (match.teamB_balls < match.teamA_balls) {
-                          aColor = "var(--red-gear)"; bColor = "var(--neon-green)";
-                      } else {
-                          aColor = "#f39c12"; bColor = "#f39c12";
-                      }
-                  }
-
+              if (match.teamB_id === "BYE") {
                   html += `
-                      <tr>
-                          <td style="font-family: 'Orbitron', sans-serif; font-weight: bold; width: 15%;">#${index+1}</td>
-                          <td class="team-name" style="color: ${aColor}; width: 35%; text-align: right; padding-right:15px;">${match.teamA_name}</td>
-                          <td style="font-size: 1.2em; width: 15%;">${scoreRender}</td>
-                          <td class="team-name" style="color: ${bColor}; width: 35%;">${match.teamB_name}</td>
-                      </tr>
-                      <tr class="match-divider"><td colspan="4"></td></tr>
-                  `;
-              });
-              html += `</tbody></table>`;
-              container.innerHTML += html;
-          }
+                  <tr>
+                      <td style="font-family: 'Orbitron', sans-serif; font-weight: bold; width: 15%;">#${index+1}</td>
+                      <td class="team-name" style="color: var(--neon-green); width: 35%; text-align: right; padding-right:15px;">${match.teamA_name}</td>
+                      <td style="font-weight: bold; font-family: 'Orbitron', sans-serif; width: 15%; color: var(--neon-green);">+2 PTS</td>
+                      <td class="team-name" style="color: #8b949e; width: 35%;">( BYE )</td>
+                  </tr>
+                  <tr class="match-divider"><td colspan="4"></td></tr>`;
+                  return; 
+              }
+
+              if (match.teamA_balls !== null && match.teamB_balls !== null) {
+                  scoreRender = `<span style="font-weight:900;">${aBalls} - ${bBalls}</span>`;
+                  if (match.teamA_balls < match.teamB_balls) {
+                      aColor = "var(--neon-green)"; bColor = "var(--red-gear)";
+                  } else if (match.teamB_balls < match.teamA_balls) {
+                      aColor = "var(--red-gear)"; bColor = "var(--neon-green)";
+                  } else {
+                      aColor = "#f39c12"; bColor = "#f39c12";
+                  }
+              }
+
+              html += `
+                  <tr>
+                      <td style="font-family: 'Orbitron', sans-serif; font-weight: bold; width: 15%;">#${index+1}</td>
+                      <td class="team-name" style="color: ${aColor}; width: 35%; text-align: right; padding-right:15px;">${match.teamA_name}</td>
+                      <td style="font-size: 1.2em; width: 15%;">${scoreRender}</td>
+                      <td class="team-name" style="color: ${bColor}; width: 35%;">${match.teamB_name}</td>
+                  </tr>
+                  <tr class="match-divider"><td colspan="4"></td></tr>
+              `;
+          });
+          html += `</tbody></table>`;
+          container.innerHTML = html;
       });
   };
 </script>
