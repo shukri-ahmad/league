@@ -57,7 +57,7 @@
 <body>
 
 <div class="container">
-    <div class="header-links"><a href="admin.html">[ ADMIN TERMINAL ]</a></div>
+    <div class="header-links"><a href="login.html">[ ADMIN TERMINAL ]</a></div>
     
     <div style="text-align: center; margin-bottom: 10px;">
         <img src="[FINAL] LOGO MAKEROBOT2026 (9)-Photoroom.png" alt="Logo" style="max-width: 250px;">
@@ -97,18 +97,16 @@
 </div>
 
 <script type="module">
-  // 👇 MUST UPDATE THIS WITH YOUR NEW FIREBASE DB KEYS! 👇
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getFirestore, collection, doc, onSnapshot, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const firebaseConfig = {
-    // ⚠️ PASTE YOUR NEW FIREBASE CONFIG DETAILS HERE
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT",
-    storageBucket: "YOUR_PROJECT.firebasestorage.app",
-    messagingSenderId: "123456789",
-    appId: "1:123456789:web:abcdefg"
+    apiKey: "AIzaSyDiJ0mtythPveASgwkQy_CdUEEAiDMVn9A",
+    authDomain: "makerobot-league.firebaseapp.com",
+    projectId: "makerobot-league",
+    storageBucket: "makerobot-league.firebasestorage.app",
+    messagingSenderId: "535133602491",
+    appId: "1:535133602491:web:f461c378707863d8f9df9e"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -322,7 +320,6 @@
                   let scoreRender = `<span style="color:#8b949e;">[ VS ]</span>`;
                   let aColor = "white", bColor = "white";
 
-                  // Handle League Auto Byes
                   if (match.teamB_id === "BYE") {
                       html += `
                       <tr>
@@ -332,10 +329,9 @@
                           <td class="team-name" style="color: #8b949e; width: 35%;">( BYE )</td>
                       </tr>
                       <tr class="match-divider"><td colspan="4"></td></tr>`;
-                      return; // skip the normal render
+                      return; 
                   }
 
-                  // Handle Pending or Played Normal Matches
                   if (match.teamA_balls !== null && match.teamB_balls !== null) {
                       scoreRender = `<span style="font-weight:900;">${aBalls} - ${bBalls}</span>`;
                       if (match.teamA_balls < match.teamB_balls) {
