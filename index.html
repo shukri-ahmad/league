@@ -75,7 +75,7 @@
         <div id="publicTimeClock" class="public-timer-display">00:00</div>
     </div>
 
-    <p class="formula-text">RANKED BY: HIGHEST POINTS (WINS/DRAWS) ➔ LEAST BALLS LEFT</p>
+    <p class="formula-text">RANKED BY: HIGHEST POINTS (WINS = 3, DRAWS = 1) ➔ LEAST BALLS LEFT</p>
     
     <table>
         <thead>
@@ -310,18 +310,6 @@
               
               let scoreRender = `<span style="color:#8b949e;">[ VS ]</span>`;
               let aColor = "white", bColor = "white";
-
-              if (match.teamB_id === "BYE") {
-                  html += `
-                  <tr>
-                      <td style="font-family: 'Orbitron', sans-serif; font-weight: bold; width: 15%;">#${index+1}</td>
-                      <td class="team-name" style="color: var(--neon-green); width: 35%; text-align: right; padding-right:15px;">${match.teamA_name}</td>
-                      <td style="font-weight: bold; font-family: 'Orbitron', sans-serif; width: 15%; color: var(--neon-green);">+2 PTS</td>
-                      <td class="team-name" style="color: #8b949e; width: 35%;">( BYE )</td>
-                  </tr>
-                  <tr class="match-divider"><td colspan="4"></td></tr>`;
-                  return; 
-              }
 
               if (match.teamA_balls !== null && match.teamB_balls !== null) {
                   scoreRender = `<span style="font-weight:900;">${aBalls} - ${bBalls}</span>`;
