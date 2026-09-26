@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>League Admin - Makerobot</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --red-gear: #e72429;
+            --blue-gear: #1f4179;
+            --league-grad: linear-gradient(90deg, #1f4179 0%, #00ff88 100%);
+            --bg-dark: #090c10;
+            --panel-bg: #111822;
+            --border-glow: #1f4179;
+            --text-main: #c9d1d9;
+            --neon-green: #00ff88;
+        }
+
+        body { font-family: 'Rajdhani', sans-serif; background-color: var(--bg-dark); color: var(--text-main); padding: 20px; display: none; background-image: radial-gradient(circle at 50% 0%, rgba(0, 255, 136, 0.1) 0%, transparent 50%);}
+        .container { max-width: 750px; margin: 0 auto; background: var(--panel-bg); padding: 20px 30px; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.8); border: 1px solid var(--border-glow); }
+        
+        .header-panel { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #30363d; padding-bottom: 15px;}
+        .header-panel h2 { color: var(--neon-green); margin: 0; font-family: 'Orbitron', sans-serif; }
+        
+        .header-controls { display: flex; align-items: center; gap: 20px;}
+        .header-controls a { color: var(--neon-green); text-decoration: none; font-weight: bold; font-family: 'Orbitron', sans-serif; font-size: 12px; transition: 0.3s;}
+        
+        .user-info { font-family: 'Orbitron', sans-serif; font-size: 11px; text-align: right; line-height: 1.5; padding-right: 15px; border-right: 1px solid #30363d; }
+        
+        h1, h2, h3 { font-family: 'Orbitron', sans-serif; color: white; text-transform: uppercase; letter-spacing: 1px;}
+        
+        .tab-menu { display: flex; border-bottom: 2px solid #30363d; margin-bottom: 25px; }
+        .tab-btn { flex: 1; padding: 12px; cursor: pointer; background: rgba(0,0,0,0.3); border: 1px solid transparent; font-size: 15px; font-weight: bold; color: #8b949e; font-family: 'Orbitron', sans-serif; transition: 0.3s; }
+        .tab-btn:hover { background: rgba(31, 65, 121, 0.3); color: white;}
+        .tab-btn.active { background: var(--panel-bg); color: white; border: 1px solid #30363d; border-bottom: 2px solid var(--panel-bg); margin-bottom: -2px; border-top: 2px solid var(--neon-green);}
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        input[type="text"], select { padding: 10px; width: 65%; border: 1px solid #30363d; border-radius: 4px; background: #0d1117; color: white; font-family: 'Rajdhani', sans-serif; font-size: 16px;}
+        select { width: 30%; margin-left: 10px; font-weight: bold; }
+        input[type="number"] { width: 60px; padding: 8px; text-align: center; font-weight: bold; border: 2px solid var(--blue-gear); border-radius: 4px; background: #0d1117; color: white; font-family: 'Orbitron', sans-serif; font-size: 16px;}
+        input[type="number"]:disabled { background-color: #090c10; border-color: #30363d; color: #484f58; cursor: not-allowed; }
+        
+        button { padding: 10px 15px; color: black; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-family: 'Orbitron', sans-serif; letter-spacing: 1px; text-transform: uppercase; transition: 0.2s;}
+        button.btn-primary { background: var(--league-grad); box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2); color: white; }
+        button.btn-primary:hover { filter: brightness(1.2); }
+        button.btn-blue { background-color: var(--blue-gear); width: 100%; margin-top: 15px; font-size: 16px; border: 1px solid #30363d; color: white;}
+        button.btn-red { background-color: var(--red-gear); padding: 5px 10px; font-size: 12px; color: white;}
+        button.btn-manage { background-color: #f39c12; padding: 5px 10px; font-size: 12px; color: black; }
+        button.btn-restart { background-color: var(--neon-green); padding: 5px 10px; font-size: 12px; color: black; }
+        .logout { background-color: transparent; border: 1px solid var(--red-gear); color: var(--red-gear); font-size: 12px; padding: 5px 10px;}
+        .logout:hover { background-color: var(--red-gear); color: white;}
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 18px;}
+        td, th { padding: 12px; border: 1px solid #30363d; text-align: center; }
+        th { background: #0d1117; color: #8b949e; font-family: 'Orbitron', sans-serif; font-size: 14px;}
+        .divider-row td { background-color: var(--blue-gear); height: 2px; padding: 0; opacity: 0.5; border: none;}
+        .team-name { font-weight: bold; text-align: left; padding-left: 15px; color: white;}
+        .round-header { background: #0d1117; padding: 10px; margin-top: 30px; border-radius: 4px; border-left: 4px solid var(--neon-green); color: white; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #30363d; border-right: 1px solid #30363d; border-bottom: 1px solid #30363d;}
+        .round-locked-badge { font-size: 12px; color: #ff7b72; font-weight: bold; }
+        
+        .lock-msg { display: none; background: rgba(231, 36, 41, 0.1); padding: 15px; border-left: 4px solid var(--red-gear); margin-bottom: 15px; font-weight: bold; color: #ff7b72; font-family: 'Orbitron', sans-serif;}
+        .active-game-label { background: rgba(31, 65, 121, 0.2); padding: 12px; border-radius: 4px; color: #79c0ff; font-weight: bold; margin-bottom: 20px; border: 1px solid var(--blue-gear); display: none; font-family: 'Orbitron', sans-serif; text-align: center;}
+
+        /* TIMER UI */
+        .timer-container { display: none; text-align: center; background: #0d1117; padding: 20px; border: 1px solid var(--blue-gear); border-radius: 8px; margin-bottom: 20px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
+        .timer-display { font-size: 65px; font-family: 'Orbitron', sans-serif; color: var(--neon-green); font-weight: 900; text-shadow: 0 0 15px rgba(0,255,136,0.4); margin-bottom: 15px; line-height: 1;}
+        .timer-display.paused { color: #f39c12; text-shadow: 0 0 15px rgba(243, 156, 18, 0.4); }
+        .timer-display.stopped { color: var(--red-gear); text-shadow: 0 0 15px rgba(231, 36, 41, 0.4); }
+        .timer-controls button { margin: 0 5px; font-size: 14px; padding: 10px 20px;}
+    </style>
+</head>
+<body id="adminBody">
+
+<div class="container">
+    <div class="header-panel">
+        <h2>LEAGUE ADMIN</h2>
+        <div class="header-controls">
+            <div id="userInfoDisplay" class="user-info"></div>
+            <a href="index.html" target="_blank">[ LAUNCH PUBLIC VIEWER ]</a>
+            <button class="logout" onclick="logout()">LOGOUT</button>
+        </div>
+    </div>
+    
+    <div class="tab-menu">
+        <button id="tabBtn0" class="tab-btn active" onclick="switchTab('gamesTab', this)">LEAGUES</button>
+        <button id="tabBtn1" class="tab-btn" onclick="switchTab('teamsTab', this)">ROSTER</button>
+        <button id="tabBtn2" class="tab-btn" onclick="switchTab('roundsTab', this)">MATCH SCHEDULE</button>
+    </div>
+
+    <div id="activeGameDisplay" class="active-game-label">TARGET LEAGUE: NULL</div>
+
+    <!-- TIMER INTERFACE -->
+    <div id="masterTimerUI" class="timer-container">
+        <div style="color: #8b949e; font-size: 12px; font-weight: bold; letter-spacing: 2px; margin-bottom: 5px;">MATCH TIMER</div>
+        <div id="timeClock" class="timer-display">00:00</div>
+        <div class="timer-controls">
+            <button class="btn-primary" onclick="timerAction('start')" style="background: var(--neon-green); color: black;">START MATCH</button>
+            <button class="btn-manage" onclick="timerAction('pause')">PAUSE</button>
+            <button class="btn-red" onclick="timerAction('reset')">RESET</button>
+        </div>
+    </div>
+
+    <div id="gamesTab" class="tab-content active">
+        <h3>CREATE NEW LEAGUE</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <input type="text" id="gameName" placeholder="League Name (e.g., Season 1)" style="width: 60%;">
+            <select id="gameDuration" style="width: 40%;">
+                <option value="1">1 MINUTE MATCH</option>
+                <option value="2">2 MINUTE MATCH</option>
+                <option value="3" selected>3 MINUTE MATCH</option>
+            </select>
+        </div>
+        <button class="btn-primary" onclick="createGame()">INITIALIZE</button>
+
+        <h3 id="systemsHeader" style="margin-top: 40px;">YOUR LEAGUES</h3>
+        <table>
+            <thead><tr><th>DIRECTORY</th><th>COMMANDS</th></tr></thead>
+            <tbody id="games-list-body"></tbody>
+        </table>
+    </div>
+
+    <div id="teamsTab" class="tab-content">
+        <div id="teamLockMessage" class="lock-msg">ROSTER LOCKED: LEAGUE SCHEDULE GENERATED.</div>
+        <div id="teamSetupControls">
+            <h3>REGISTER TEAM</h3>
+            <input type="text" id="teamName" placeholder="Enter Team Designation">
+            <button class="btn-primary" onclick="addTeam()">REGISTER</button>
+        </div>
+        <h3 style="margin-top: 40px;">LEAGUE ROSTER (<span id="teamCount">0</span>)</h3>
+        <table>
+            <thead><tr><th>TEAM</th><th>ACTION</th></tr></thead>
+            <tbody id="teams-list-body"></tbody>
+        </table>
+        <button id="doneTeamsBtn" class="btn-primary" onclick="generateLeagueSchedule()" style="width: 100%; margin-top: 20px;">[ GENERATE FULL LEAGUE SCHEDULE ]</button>
+    </div>
+
+    <div id="roundsTab" class="tab-content">
+        <div id="gameLockedMessage" class="lock-msg">LEAGUE CONCLUDED. DATA FINALIZED.</div>
+        <p id="matchesInfoMsg" style="font-size: 13px; color: #8b949e; margin-top: 0; font-family: 'Rajdhani', sans-serif;">DATA AUTO-SAVES UPON INPUT.</p>
+        
+        <div id="matches-container"></div>
+        
+        <button id="finishGameBtn" class="btn-red" onclick="finishGame()" style="width: 100%; margin-top: 25px; font-size: 16px; display: none;">TERMINATE LEAGUE (LOCK ALL SCORES)</button>
+    </div>
+</div>
+
+<script type="module">
+  // 👇 MUST UPDATE THIS WITH YOUR NEW FIREBASE DB KEYS! 👇
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // INJECTED SUPER ADMIN UID
+  const SUPER_ADMIN_UID = "fTWjYGD7I3X1HPhUaooeuJhNfOO2"; 
+
+  const firebaseConfig = {
+    // ⚠️ PASTE YOUR NEW FIREBASE CONFIG DETAILS HERE
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.firebasestorage.app",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcdefg"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentGameId = null;
+  let isTournamentStarted = false;
+  let currentTeamsList = [];
+  let currentMatchesList = []; 
+  let allGamesData = {}; 
+  let currentGameIsLocked = false;
+  let isSuperAdminUser = false; 
+  
+  let unsubGames = null;
+  let unsubTeams = null;
+  let unsubMatches = null;
+
+  // --- AUDIO SYNTHESIZER ---
+  let audioCtx = null;
+  function getAudioCtx() {
+      if (!audioCtx) {
+          try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } 
+          catch (e) { console.warn("Audio Context not supported."); }
+      }
+      return audioCtx;
+  }
+
+  function playSound(type) {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+      if (ctx.state === 'suspended') ctx.resume();
+      
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      if (type === 'start') {
+          osc.type = 'sine'; osc.frequency.setValueAtTime(880, ctx.currentTime);
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          osc.start(); osc.stop(ctx.currentTime + 0.6);
+      } else if (type === 'tick') {
+          osc.type = 'square'; osc.frequency.setValueAtTime(440, ctx.currentTime);
+          gain.gain.setValueAtTime(0.01, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+          osc.start(); osc.stop(ctx.currentTime + 0.1);
+      } else if (type === 'end') {
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, ctx.currentTime);
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          osc.start(); osc.stop(ctx.currentTime + 1.5);
+      }
+  }
+
+  // --- TIMER LOGIC ---
+  let localTimerInterval = null;
+  let endSoundPlayed = false;
+  let lastTickSecond = -1;
+
+  function formatTime(ms) {
+      if (ms < 0) ms = 0;
+      let totalSeconds = Math.floor(ms / 1000);
+      let m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+      let s = (totalSeconds % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+  }
+
+  function renderTimerUI(game) {
+      const display = document.getElementById("timeClock");
+      
+      if (game.timerState === 'idle' || game.timerState === 'paused') {
+          clearInterval(localTimerInterval);
+          display.innerText = formatTime(game.timerRemaining);
+          display.className = game.timerState === 'paused' ? 'timer-display paused' : 'timer-display';
+          endSoundPlayed = false;
+      } 
+      else if (game.timerState === 'running') {
+          display.className = 'timer-display';
+          clearInterval(localTimerInterval);
+          localTimerInterval = setInterval(() => {
+              let now = Date.now();
+              let remaining = game.timerEndTime - now;
+              
+              if (remaining <= 0) {
+                  remaining = 0;
+                  clearInterval(localTimerInterval);
+                  display.className = 'timer-display stopped';
+                  if (!endSoundPlayed) {
+                      playSound('end');
+                      endSoundPlayed = true;
+                  }
+              } else {
+                  let currentSecond = Math.floor(remaining / 1000);
+                  if (currentSecond !== lastTickSecond && currentSecond <= 10 && currentSecond > 0) {
+                      playSound('tick');
+                      lastTickSecond = currentSecond;
+                  }
+              }
+              display.innerText = formatTime(remaining);
+          }, 50); 
+      }
+  }
+
+  window.timerAction = async function(action) {
+      if (!currentGameId) return;
+      const ctx = getAudioCtx();
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+      
+      const game = allGamesData[currentGameId];
+      let updates = {};
+
+      if (action === 'start') {
+          if (game.timerState === 'running' || game.timerRemaining <= 0) return;
+          updates = {
+              timerState: 'running',
+              timerEndTime: Date.now() + game.timerRemaining
+          };
+          playSound('start');
+      } else if (action === 'pause') {
+          if (game.timerState !== 'running') return;
+          let remaining = Math.max(0, game.timerEndTime - Date.now());
+          updates = {
+              timerState: 'paused',
+              timerRemaining: remaining
+          };
+      } else if (action === 'reset') {
+          if(!confirm("Reset match timer to starting duration?")) return;
+          updates = {
+              timerState: 'idle',
+              timerRemaining: (game.timerDuration || 180) * 1000,
+              timerEndTime: 0
+          };
+      }
+      await updateDoc(doc(db, "games", currentGameId), updates);
+  };
+
+  onAuthStateChanged(auth, user => {
+    if (user) {
+        document.getElementById("adminBody").style.display = "block";
+        isSuperAdminUser = (user.uid === SUPER_ADMIN_UID);
+        const roleText = isSuperAdminUser ? "SUPER ADMIN" : "ADMIN";
+        const roleColor = isSuperAdminUser ? "var(--neon-green)" : "#79c0ff";
+
+        document.getElementById("userInfoDisplay").innerHTML = `
+            <span style="color: #8b949e;">ID:</span> <span style="color: white;">${user.email}</span><br>
+            <span style="color: #8b949e;">ROLE:</span> <span style="color: ${roleColor}; font-weight: bold;">[${roleText}]</span>
+        `;
+        loadUserGames(user); 
+    } else {
+        window.location.href = "login.html"; 
+    }
+  });
+
+  window.logout = () => signOut(auth).then(() => window.location.href = "login.html");
+
+  function loadUserGames(user) {
+      let qGames = isSuperAdminUser 
+          ? query(collection(db, "games")) 
+          : query(collection(db, "games"), where("createdBy", "==", user.uid)); 
+          
+      if(isSuperAdminUser){
+          document.getElementById("systemsHeader").innerText = "ALL LEAGUES (SUPER ADMIN)";
+      }
+      
+      unsubGames = onSnapshot(qGames, (snapshot) => {
+          const tbody = document.getElementById("games-list-body");
+          tbody.innerHTML = "";
+          allGamesData = {};
+
+          snapshot.forEach(docSnap => {
+              const game = docSnap.data();
+              allGamesData[docSnap.id] = game;
+              const lockedBadge = game.isLocked ? `<span style="color:var(--red-gear); font-size:12px; margin-left: 10px;">[LOCKED]</span>` : "";
+              
+              tbody.innerHTML += `
+                  <tr>
+                      <td style="font-weight: bold; text-align: left; padding-left: 15px; color: white;">${game.name} ${lockedBadge}</td>
+                      <td>
+                          <button class="btn-manage" onclick="selectGame('${docSnap.id}')">SELECT</button>
+                          <button class="btn-restart" onclick="restartGame('${docSnap.id}', '${game.name}')">REBOOT</button>
+                          <button class="btn-red" onclick="deleteGame('${docSnap.id}', '${game.name}')">DEL</button>
+                      </td>
+                  </tr>`;
+          });
+
+          if(currentGameId && allGamesData[currentGameId]) {
+              currentGameIsLocked = allGamesData[currentGameId].isLocked || false;
+              renderTimerUI(allGamesData[currentGameId]);
+              applyGameLockUI();
+          } else {
+              document.getElementById("masterTimerUI").style.display = "none";
+          }
+      });
+  }
+
+  window.switchTab = function(tabId, btnElement) {
+    if ((tabId === 'teamsTab' || tabId === 'roundsTab') && !currentGameId) {
+        return alert("PLEASE SELECT A TARGET LEAGUE FIRST.");
+    }
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btnElement.classList.add('active');
+  };
+
+  window.createGame = async function() {
+      const name = document.getElementById("gameName").value.trim();
+      const durationMins = parseInt(document.getElementById("gameDuration").value);
+      if(!name) return;
+      
+      const durationSeconds = durationMins * 60;
+      await addDoc(collection(db, "games"), { 
+          name: name, createdAt: new Date(), isLocked: false, createdBy: auth.currentUser.uid,
+          timerDuration: durationSeconds, timerState: 'idle', timerRemaining: durationSeconds * 1000, timerEndTime: 0
+      });
+      document.getElementById("gameName").value = "";
+  };
+
+  window.deleteGame = async function(id, name) {
+      if(confirm(`DELETE LEAGUE "${name}"?`)) {
+          if(currentGameId === id) {
+              currentGameId = null;
+              document.getElementById("activeGameDisplay").style.display = "none";
+              document.getElementById("masterTimerUI").style.display = "none";
+          }
+          await deleteDoc(doc(db, "games", id));
+      }
+  };
+
+  window.restartGame = async function(id, name) {
+      if(!confirm(`REBOOT "${name}"?\nAll matches will be deleted. Teams remain.`)) return;
+      const game = allGamesData[id];
+      await updateDoc(doc(db, "games", id), { 
+          isLocked: false, timerState: 'idle', timerRemaining: (game.timerDuration || 180) * 1000, timerEndTime: 0 
+      });
+      
+      const matchesSnap = await getDocs(collection(db, "games", id, "matches"));
+      const matchPromises = [];
+      matchesSnap.forEach(matchDoc => { matchPromises.push(deleteDoc(doc(db, "games", id, "matches", matchDoc.id))); });
+      await Promise.all(matchPromises);
+      
+      const teamsSnap = await getDocs(collection(db, "games", id, "teams"));
+      const teamPromises = [];
+      teamsSnap.forEach(teamDoc => { teamPromises.push(updateDoc(doc(db, "games", id, "teams", teamDoc.id), { points: 0, balls: 0 })); });
+      await Promise.all(teamPromises);
+      
+      alert(`LEAGUE REBOOTED: "${name}"`);
+      selectGame(id);
+  };
+
+  window.selectGame = function(id) {
+      currentGameId = id;
+      const game = allGamesData[id];
+      currentGameIsLocked = game.isLocked || false;
+      
+      document.getElementById("activeGameDisplay").style.display = "block";
+      document.getElementById("activeGameDisplay").innerText = `TARGET LEAGUE: ${game.name}`;
+      
+      document.getElementById("masterTimerUI").style.display = "block";
+      renderTimerUI(game);
+      
+      if(unsubTeams) unsubTeams();
+      if(unsubMatches) unsubMatches();
+
+      unsubTeams = onSnapshot(collection(db, "games", currentGameId, "teams"), (snapshot) => {
+          currentTeamsList = [];
+          snapshot.forEach(d => currentTeamsList.push({ id: d.id, ...d.data() }));
+          renderTeamsList();
+      });
+
+      const qMatches = query(collection(db, "games", currentGameId, "matches"), orderBy("round", "asc"));
+      unsubMatches = onSnapshot(qMatches, (snapshot) => {
+          const container = document.getElementById("matches-container");
+          container.innerHTML = "";
+          currentMatchesList = [];
+          let roundsData = {};
+          let maxRound = 0;
+
+          if (snapshot.size > 0) {
+              isTournamentStarted = true;
+              document.getElementById("teamSetupControls").style.display = "none";
+              document.getElementById("doneTeamsBtn").style.display = "none";
+              document.getElementById("teamLockMessage").style.display = "block";
+              if(!currentGameIsLocked) document.getElementById("finishGameBtn").style.display = "block";
+          } else {
+              isTournamentStarted = false;
+              document.getElementById("teamSetupControls").style.display = "block";
+              document.getElementById("doneTeamsBtn").style.display = "block";
+              document.getElementById("teamLockMessage").style.display = "none";
+              document.getElementById("finishGameBtn").style.display = "none";
+          }
+          renderTeamsList();
+
+          snapshot.forEach(docSnap => {
+              const match = docSnap.data();
+              match.id = docSnap.id;
+              currentMatchesList.push(match);
+              if(match.round > maxRound) maxRound = match.round;
+              if(!roundsData[match.round]) roundsData[match.round] = [];
+              roundsData[match.round].push(match);
+          });
+
+          const disabledAttr = currentGameIsLocked ? "disabled" : "";
+
+          for(let r = 1; r <= maxRound; r++) {
+              if(!roundsData[r]) continue;
+              
+              let html = `<div class="round-header"><span>MATCHDAY ${r}</span></div><table><thead><tr><th>MATCH</th><th>TEAM</th><th>SCORE</th></tr></thead><tbody>`;
+              
+              roundsData[r].forEach((match, index) => {
+                  const aBalls = match.teamA_balls === null ? "" : match.teamA_balls;
+                  const bBalls = match.teamB_balls === null ? "" : match.teamB_balls;
+                  
+                  let aStatus = "", bStatus = "";
+                  
+                  if (aBalls !== "" && bBalls !== "") {
+                      if (aBalls < bBalls) {
+                          aStatus = `<span style="color: var(--neon-green); font-size: 14px; margin-left: 10px;">[WIN]</span>`;
+                          bStatus = `<span style="color: var(--red-gear); font-size: 14px; margin-left: 10px;">[LOSS]</span>`;
+                      } else if (bBalls < aBalls) {
+                          bStatus = `<span style="color: var(--neon-green); font-size: 14px; margin-left: 10px;">[WIN]</span>`;
+                          aStatus = `<span style="color: var(--red-gear); font-size: 14px; margin-left: 10px;">[LOSS]</span>`;
+                      } else {
+                          aStatus = `<span style="color: #f39c12; font-size: 14px; margin-left: 10px;">[DRAW]</span>`;
+                          bStatus = `<span style="color: #f39c12; font-size: 14px; margin-left: 10px;">[DRAW]</span>`;
+                      }
+                  }
+
+                  if (match.teamB_id === "BYE") {
+                      html += `
+                      <tr>
+                          <td style="font-weight:bold;">#${index+1}</td>
+                          <td class="team-name">${match.teamA_name} <span style="color:#8b949e; font-size:12px;">(BYE)</span></td>
+                          <td><span style="color: var(--neon-green);">+2 PTS</span></td>
+                      </tr><tr class="divider-row"><td colspan="3"></td></tr>`;
+                  } else {
+                      html += `
+                      <tr>
+                          <td rowspan="2" style="font-weight:bold;">#${index+1}</td>
+                          <td class="team-name">${match.teamA_name} ${aStatus}</td>
+                          <td><input type="number" min="0" value="${aBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'A', this.value)"></td>
+                      </tr>
+                      <tr>
+                          <td class="team-name">${match.teamB_name} ${bStatus}</td>
+                          <td><input type="number" min="0" value="${bBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'B', this.value)"></td>
+                      </tr>
+                      <tr class="divider-row"><td colspan="3"></td></tr>`;
+                  }
+              });
+              html += `</tbody></table>`;
+              container.innerHTML += html;
+          }
+      });
+      switchTab('teamsTab', document.getElementById('tabBtn1'));
+  };
+
+  function applyGameLockUI() {
+      const finishBtn = document.getElementById("finishGameBtn");
+      const lockMsg = document.getElementById("gameLockedMessage");
+      const matchesMsg = document.getElementById("matchesInfoMsg");
+
+      if (currentGameIsLocked) {
+          finishBtn.style.display = "none";
+          matchesMsg.style.display = "none";
+          lockMsg.style.display = "block";
+          document.querySelectorAll("#matches-container input").forEach(input => input.disabled = true);
+      } else {
+          matchesMsg.style.display = "block";
+          lockMsg.style.display = "none";
+          finishBtn.style.display = isTournamentStarted ? "block" : "none";
+      }
+  }
+
+  function renderTeamsList() {
+      document.getElementById("teamCount").innerText = currentTeamsList.length;
+      const tbody = document.getElementById("teams-list-body");
+      let htmlString = "";
+      currentTeamsList.forEach(team => {
+          const actionHtml = isTournamentStarted 
+              ? `<span style="color: #6e7681; font-style: italic;">LOCKED</span>` 
+              : `<button class="btn-red" onclick="deleteTeam('${team.id}', '${team.name}')">DEL</button>`;
+          htmlString += `<tr><td style="text-align: left; padding-left: 15px; font-weight: bold; color:white;">${team.name}</td><td>${actionHtml}</td></tr>`;
+      });
+      tbody.innerHTML = htmlString;
+  }
+
+  window.addTeam = async function() {
+      try {
+          const name = document.getElementById("teamName").value.trim();
+          if(!currentGameId) return alert("ERROR: No league selected.");
+          if(!name) return alert("ERROR: Type a team name.");
+
+          await addDoc(collection(db, "games", currentGameId, "teams"), { name: name, points: 0, balls: 0 });
+          document.getElementById("teamName").value = ""; 
+      } catch (error) { alert("SYSTEM ERROR: " + error.message); }
+  };
+
+  document.getElementById("teamName").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") { event.preventDefault(); window.addTeam(); }
+  });
+
+  window.deleteTeam = async function(id, name) {
+      if(confirm(`DELETE TEAM: ${name}?`)) await deleteDoc(doc(db, "games", currentGameId, "teams", id));
+  };
+
+  // --- ROUND ROBIN ALGORITHM (LEAGUE ENGINE) ---
+  window.generateLeagueSchedule = async function() {
+      if(currentTeamsList.length < 3) return alert("MINIMUM 3 TEAMS REQUIRED FOR LEAGUE.");
+      if(!confirm("SYSTEM PROMPT: GENERATE FULL LEAGUE SCHEDULE?\n\nThis will lock the roster and generate every match for the entire season at once. This cannot be undone!")) return;
+      
+      switchTab('roundsTab', document.getElementById('tabBtn2'));
+
+      let teams = [...currentTeamsList];
+      teams.sort(() => Math.random() - 0.5);
+
+      if (teams.length % 2 !== 0) {
+          teams.push({ id: "BYE", name: "[ AUTOMATIC BYE ]", isBye: true });
+      }
+
+      const numTeams = teams.length;
+      const numRounds = numTeams - 1;
+      const halfSize = numTeams / 2;
+      
+      let teamIndices = teams.map((_, i) => i);
+      teamIndices.shift(); 
+
+      for (let round = 1; round <= numRounds; round++) {
+          let newIndices = [0].concat(teamIndices);
+          let firstHalf = newIndices.slice(0, halfSize);
+          let secondHalf = newIndices.slice(halfSize).reverse();
+
+          for (let i = 0; i < halfSize; i++) {
+              let teamA = teams[firstHalf[i]];
+              let teamB = teams[secondHalf[i]];
+              
+              if (teamB.isBye || teamA.isBye) {
+                  let realTeam = teamA.isBye ? teamB : teamA;
+                  await addDoc(collection(db, "games", currentGameId, "matches"), {
+                      round: round, 
+                      teamA_id: realTeam.id, teamA_name: realTeam.name,
+                      teamB_id: "BYE", teamB_name: "[ AUTOMATIC BYE ]", 
+                      teamA_balls: 5, teamB_balls: 10 
+                  });
+              } else {
+                  await addDoc(collection(db, "games", currentGameId, "matches"), {
+                      round: round, 
+                      teamA_id: teamA.id, teamA_name: teamA.name,
+                      teamB_id: teamB.id, teamB_name: teamB.name, 
+                      teamA_balls: null, teamB_balls: null
+                  });
+              }
+          }
+          teamIndices.push(teamIndices.shift());
+      }
+      recalculateStandings();
+  };
+
+  window.updateScore = async function(matchId, teamSide, value) {
+      if(currentGameIsLocked) return alert("SYSTEM LOCKED.");
+      const updateData = {};
+      const numValue = value === "" ? null : parseInt(value);
+      if (teamSide === 'A') updateData.teamA_balls = numValue;
+      if (teamSide === 'B') updateData.teamB_balls = numValue;
+      await updateDoc(doc(db, "games", currentGameId, "matches", matchId), updateData);
+      recalculateStandings();
+  };
+
+  async function recalculateStandings() {
+      let teamStats = {};
+      currentTeamsList.forEach(t => teamStats[t.id] = { points: 0, balls: 0 });
+
+      const matchesSnap = await getDocs(collection(db, "games", currentGameId, "matches"));
+      matchesSnap.forEach(docSnap => {
+          const match = docSnap.data();
+          if(match.teamA_balls !== null && match.teamB_balls !== null) {
+              let aPts = 0, bPts = 0;
+              if(match.teamA_balls < match.teamB_balls) { aPts = 2; bPts = 0; }
+              else if(match.teamB_balls < match.teamA_balls) { aPts = 0; bPts = 2; }
+              else { aPts = 1; bPts = 1; }
+
+              if(teamStats[match.teamA_id]) { teamStats[match.teamA_id].points += aPts; teamStats[match.teamA_id].balls += match.teamA_balls; }
+              if(teamStats[match.teamB_id]) { teamStats[match.teamB_id].points += bPts; teamStats[match.teamB_id].balls += match.teamB_balls; }
+          }
+      });
+
+      for (let teamId in teamStats) {
+          if(teamStats[teamId]) {
+              await updateDoc(doc(db, "games", currentGameId, "teams", teamId), { points: teamStats[teamId].points, balls: teamStats[teamId].balls });
+          }
+      }
+  }
+
+  window.finishGame = async function() {
+      if(!confirm("SYSTEM PROMPT: TERMINATE LEAGUE?\nThis locks all scores forever.")) return;
+      await updateDoc(doc(db, "games", currentGameId), { isLocked: true });
+      applyGameLockUI();
+      alert("LEAGUE CONCLUDED. DATA LOCKED.");
+  };
+</script>
+</body>
+</html>
