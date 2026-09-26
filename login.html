@@ -142,9 +142,16 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
 
+    // Safety Delay added to break infinite loops
     onAuthStateChanged(auth, user => {
         if (user) {
-            window.location.href = "admin.html";
+            const btn = document.getElementById("loginBtn");
+            btn.innerText = "LOGGED IN! REDIRECTING...";
+            btn.style.background = "var(--neon-green)";
+            
+            setTimeout(() => {
+                window.location.href = "admin.html";
+            }, 1500); 
         }
     });
 
