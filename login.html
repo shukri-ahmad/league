@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Makerobot League</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --league-grad: linear-gradient(90deg, #1f4179 0%, #00ff88 100%);
+            --bg-dark: #090c10;
+            --panel-bg: #111822;
+            --border-glow: #1f4179;
+            --text-main: #c9d1d9;
+            --neon-green: #00ff88;
+            --red-gear: #e72429;
+        }
+
+        body { 
+            font-family: 'Rajdhani', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: var(--text-main); 
+            margin: 0; 
+            height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background-image: radial-gradient(circle at 50% 50%, rgba(0, 255, 136, 0.1) 0%, transparent 60%);
+        }
+
+        .login-box { 
+            background: var(--panel-bg); 
+            padding: 40px; 
+            border-radius: 12px; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.9); 
+            border: 1px solid var(--border-glow); 
+            width: 100%; 
+            max-width: 400px; 
+            text-align: center;
+        }
+
+        .login-box img { max-width: 200px; margin-bottom: 10px; }
+        
+        h2 { 
+            font-family: 'Orbitron', sans-serif; 
+            color: var(--neon-green); 
+            margin-top: 0; 
+            margin-bottom: 30px; 
+            letter-spacing: 2px;
+        }
+
+        input[type="email"], input[type="password"] { 
+            width: 90%; 
+            padding: 12px; 
+            margin-bottom: 20px; 
+            border: 1px solid #30363d; 
+            border-radius: 4px; 
+            background: #0d1117; 
+            color: white; 
+            font-family: 'Rajdhani', sans-serif; 
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--neon-green);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+        }
+
+        button { 
+            width: 96%; 
+            padding: 12px; 
+            color: black; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-family: 'Orbitron', sans-serif; 
+            letter-spacing: 2px; 
+            text-transform: uppercase; 
+            transition: 0.3s;
+            background: var(--league-grad); 
+            box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2);
+            font-size: 16px;
+        }
+
+        button:hover { filter: brightness(1.2); box-shadow: 0 4px 20px rgba(0, 255, 136, 0.4); }
+
+        .error-message {
+            color: var(--red-gear);
+            font-weight: bold;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .back-link {
+            display: block;
+            margin-top: 25px;
+            color: #8b949e;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .back-link:hover {
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <img src="[FINAL] LOGO MAKEROBOT2026 (9)-Photoroom.png" alt="Makerobot Logo">
+        <h2>SYSTEM LOGIN</h2>
+        
+        <input type="email" id="emailInput" placeholder="ADMIN EMAIL" required>
+        <input type="password" id="passwordInput" placeholder="AUTHORIZATION CODE" required>
+        
+        <button id="loginBtn" onclick="attemptLogin()">AUTHENTICATE</button>
+        
+        <div id="errorMessage" class="error-message">Access Denied: Invalid Credentials</div>
+
+        <a href="index.html" class="back-link">← RETURN TO PUBLIC VIEWER</a>
+    </div>
+
+<script type="module">
+    // 👇 MUST UPDATE THIS WITH YOUR NEW FIREBASE DB KEYS! 👇
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+    const firebaseConfig = {
+      // ⚠️ PASTE YOUR NEW FIREBASE CONFIG DETAILS HERE
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.firebasestorage.app",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdefg"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // If already logged in, bypass the login screen and go straight to admin
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            window.location.href = "admin.html";
+        }
+    });
+
+    window.attemptLogin = async function() {
+        const email = document.getElementById("emailInput").value.trim();
+        const password = document.getElementById("passwordInput").value.trim();
+        const errorDiv = document.getElementById("errorMessage");
+        const loginBtn = document.getElementById("loginBtn");
+
+        if (!email || !password) {
+            errorDiv.style.display = "block";
+            errorDiv.innerText = "Please enter both Email and Password.";
+            return;
+        }
+
+        loginBtn.innerText = "VERIFYING...";
+        loginBtn.disabled = true;
+
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            // If successful, onAuthStateChanged will redirect automatically
+        } catch (error) {
+            loginBtn.innerText = "AUTHENTICATE";
+            loginBtn.disabled = false;
+            errorDiv.style.display = "block";
+            
+            // Make the error messages a bit more human-readable
+            if (error.code === 'auth/invalid-credential') {
+                errorDiv.innerText = "Access Denied: Incorrect email or password.";
+            } else if (error.code === 'auth/too-many-requests') {
+                errorDiv.innerText = "Account temporarily locked due to too many failed attempts. Try again later.";
+            } else {
+                errorDiv.innerText = "Error: " + error.message;
+            }
+        }
+    };
+
+    // Allow pressing "Enter" on the password field to submit
+    document.getElementById("passwordInput").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            window.attemptLogin();
+        }
+    });
+</script>
+
+</body>
+</html>
