@@ -57,8 +57,6 @@
         th { background: #0d1117; color: #8b949e; font-family: 'Orbitron', sans-serif; font-size: 14px;}
         .divider-row td { background-color: var(--blue-gear); height: 2px; padding: 0; opacity: 0.5; border: none;}
         .team-name { font-weight: bold; text-align: left; padding-left: 15px; color: white;}
-        .round-header { background: #0d1117; padding: 10px; margin-top: 30px; border-radius: 4px; border-left: 4px solid var(--neon-green); color: white; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #30363d; border-right: 1px solid #30363d; border-bottom: 1px solid #30363d;}
-        .round-locked-badge { font-size: 12px; color: #ff7b72; font-weight: bold; }
         
         .lock-msg { display: none; background: rgba(231, 36, 41, 0.1); padding: 15px; border-left: 4px solid var(--red-gear); margin-bottom: 15px; font-weight: bold; color: #ff7b72; font-family: 'Orbitron', sans-serif;}
         .active-game-label { background: rgba(31, 65, 121, 0.2); padding: 12px; border-radius: 4px; color: #79c0ff; font-weight: bold; margin-bottom: 20px; border: 1px solid var(--blue-gear); display: none; font-family: 'Orbitron', sans-serif; text-align: center;}
@@ -105,7 +103,7 @@
     <div id="gamesTab" class="tab-content active">
         <h3>CREATE NEW LEAGUE</h3>
         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-            <input type="text" id="gameName" placeholder="League Name (e.g., Season 1)" style="width: 60%;">
+            <input type="text" id="gameName" placeholder="League Name (e.g., Session 1)" style="width: 60%;">
             <select id="gameDuration" style="width: 40%;">
                 <option value="1">1 MINUTE MATCH</option>
                 <option value="2">2 MINUTE MATCH</option>
@@ -133,7 +131,7 @@
             <thead><tr><th>TEAM</th><th>ACTION</th></tr></thead>
             <tbody id="teams-list-body"></tbody>
         </table>
-        <button id="doneTeamsBtn" class="btn-primary" onclick="generateLeagueSchedule()" style="width: 100%; margin-top: 20px;">[ GENERATE FULL LEAGUE SCHEDULE ]</button>
+        <button id="doneTeamsBtn" class="btn-primary" onclick="generateLeagueSchedule()" style="width: 100%; margin-top: 20px;">[ GENERATE CONTINUOUS LEAGUE SCHEDULE ]</button>
     </div>
 
     <div id="roundsTab" class="tab-content">
@@ -154,12 +152,13 @@
   const SUPER_ADMIN_UID = "fTWjYGD7I3X1HPhUaooeuJhNfOO2"; 
 
   const firebaseConfig = {
-    apiKey: "AIzaSyDiJ0mtythPveASgwkQy_CdUEEAiDMVn9A",
-    authDomain: "makerobot-league.firebaseapp.com",
-    projectId: "makerobot-league",
-    storageBucket: "makerobot-league.firebasestorage.app",
-    messagingSenderId: "535133602491",
-    appId: "1:535133602491:web:f461c378707863d8f9df9e"
+    // ⚠️ PASTE YOUR NEW FIREBASE CONFIG DETAILS HERE
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.firebasestorage.app",
+    messagingSenderId: "123456789",
+    appId: "1:123456789:web:abcdefg"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -178,7 +177,6 @@
   let unsubTeams = null;
   let unsubMatches = null;
 
-  // --- AUDIO SYNTHESIZER ---
   let audioCtx = null;
   function getAudioCtx() {
       if (!audioCtx) {
@@ -214,7 +212,6 @@
       }
   }
 
-  // --- TIMER LOGIC ---
   let localTimerInterval = null;
   let endSoundPlayed = false;
   let lastTickSecond = -1;
@@ -435,8 +432,6 @@
           const container = document.getElementById("matches-container");
           container.innerHTML = "";
           currentMatchesList = [];
-          let roundsData = {};
-          let maxRound = 0;
 
           if (snapshot.size > 0) {
               isTournamentStarted = true;
@@ -450,6 +445,7 @@
               document.getElementById("doneTeamsBtn").style.display = "block";
               document.getElementById("teamLockMessage").style.display = "none";
               document.getElementById("finishGameBtn").style.display = "none";
+              return;
           }
           renderTeamsList();
 
@@ -457,61 +453,55 @@
               const match = docSnap.data();
               match.id = docSnap.id;
               currentMatchesList.push(match);
-              if(match.round > maxRound) maxRound = match.round;
-              if(!roundsData[match.round]) roundsData[match.round] = [];
-              roundsData[match.round].push(match);
           });
 
           const disabledAttr = currentGameIsLocked ? "disabled" : "";
 
-          for(let r = 1; r <= maxRound; r++) {
-              if(!roundsData[r]) continue;
+          // RENDER AS ONE CONTINUOUS TABLE
+          let html = `<table><thead><tr><th>MATCH</th><th>TEAM</th><th>SCORE</th></tr></thead><tbody>`;
+          
+          currentMatchesList.forEach((match, index) => {
+              const aBalls = match.teamA_balls === null ? "" : match.teamA_balls;
+              const bBalls = match.teamB_balls === null ? "" : match.teamB_balls;
               
-              let html = `<div class="round-header"><span>MATCHDAY ${r}</span></div><table><thead><tr><th>MATCH</th><th>TEAM</th><th>SCORE</th></tr></thead><tbody>`;
+              let aStatus = "", bStatus = "";
               
-              roundsData[r].forEach((match, index) => {
-                  const aBalls = match.teamA_balls === null ? "" : match.teamA_balls;
-                  const bBalls = match.teamB_balls === null ? "" : match.teamB_balls;
-                  
-                  let aStatus = "", bStatus = "";
-                  
-                  if (aBalls !== "" && bBalls !== "") {
-                      if (aBalls < bBalls) {
-                          aStatus = `<span style="color: var(--neon-green); font-size: 14px; margin-left: 10px;">[WIN]</span>`;
-                          bStatus = `<span style="color: var(--red-gear); font-size: 14px; margin-left: 10px;">[LOSS]</span>`;
-                      } else if (bBalls < aBalls) {
-                          bStatus = `<span style="color: var(--neon-green); font-size: 14px; margin-left: 10px;">[WIN]</span>`;
-                          aStatus = `<span style="color: var(--red-gear); font-size: 14px; margin-left: 10px;">[LOSS]</span>`;
-                      } else {
-                          aStatus = `<span style="color: #f39c12; font-size: 14px; margin-left: 10px;">[DRAW]</span>`;
-                          bStatus = `<span style="color: #f39c12; font-size: 14px; margin-left: 10px;">[DRAW]</span>`;
-                      }
-                  }
-
-                  if (match.teamB_id === "BYE") {
-                      html += `
-                      <tr>
-                          <td style="font-weight:bold;">#${index+1}</td>
-                          <td class="team-name">${match.teamA_name} <span style="color:#8b949e; font-size:12px;">(BYE)</span></td>
-                          <td><span style="color: var(--neon-green);">+2 PTS</span></td>
-                      </tr><tr class="divider-row"><td colspan="3"></td></tr>`;
+              if (aBalls !== "" && bBalls !== "") {
+                  if (aBalls < bBalls) {
+                      aStatus = `<span style="color: var(--neon-green); font-size: 14px; margin-left: 10px;">[WIN]</span>`;
+                      bStatus = `<span style="color: var(--red-gear); font-size: 14px; margin-left: 10px;">[LOSS]</span>`;
+                  } else if (bBalls < aBalls) {
+                      bStatus = `<span style="color: var(--neon-green); font-size: 14px; margin-left: 10px;">[WIN]</span>`;
+                      aStatus = `<span style="color: var(--red-gear); font-size: 14px; margin-left: 10px;">[LOSS]</span>`;
                   } else {
-                      html += `
-                      <tr>
-                          <td rowspan="2" style="font-weight:bold;">#${index+1}</td>
-                          <td class="team-name">${match.teamA_name} ${aStatus}</td>
-                          <td><input type="number" min="0" value="${aBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'A', this.value)"></td>
-                      </tr>
-                      <tr>
-                          <td class="team-name">${match.teamB_name} ${bStatus}</td>
-                          <td><input type="number" min="0" value="${bBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'B', this.value)"></td>
-                      </tr>
-                      <tr class="divider-row"><td colspan="3"></td></tr>`;
+                      aStatus = `<span style="color: #f39c12; font-size: 14px; margin-left: 10px;">[DRAW]</span>`;
+                      bStatus = `<span style="color: #f39c12; font-size: 14px; margin-left: 10px;">[DRAW]</span>`;
                   }
-              });
-              html += `</tbody></table>`;
-              container.innerHTML += html;
-          }
+              }
+
+              if (match.teamB_id === "BYE") {
+                  html += `
+                  <tr>
+                      <td style="font-weight:bold;">#${index+1}</td>
+                      <td class="team-name">${match.teamA_name} <span style="color:#8b949e; font-size:12px;">(BYE)</span></td>
+                      <td><span style="color: var(--neon-green);">+2 PTS</span></td>
+                  </tr><tr class="divider-row"><td colspan="3"></td></tr>`;
+              } else {
+                  html += `
+                  <tr>
+                      <td rowspan="2" style="font-weight:bold;">#${index+1}</td>
+                      <td class="team-name">${match.teamA_name} ${aStatus}</td>
+                      <td><input type="number" min="0" value="${aBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'A', this.value)"></td>
+                  </tr>
+                  <tr>
+                      <td class="team-name">${match.teamB_name} ${bStatus}</td>
+                      <td><input type="number" min="0" value="${bBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'B', this.value)"></td>
+                  </tr>
+                  <tr class="divider-row"><td colspan="3"></td></tr>`;
+              }
+          });
+          html += `</tbody></table>`;
+          container.innerHTML = html;
       });
       switchTab('teamsTab', document.getElementById('tabBtn1'));
   };
@@ -565,7 +555,6 @@
       if(confirm(`DELETE TEAM: ${name}?`)) await deleteDoc(doc(db, "games", currentGameId, "teams", id));
   };
 
-  // --- ROUND ROBIN ALGORITHM (LEAGUE ENGINE) ---
   window.generateLeagueSchedule = async function() {
       if(currentTeamsList.length < 3) return alert("MINIMUM 3 TEAMS REQUIRED FOR LEAGUE.");
       if(!confirm("SYSTEM PROMPT: GENERATE FULL LEAGUE SCHEDULE?\n\nThis will lock the roster and generate every match for the entire season at once. This cannot be undone!")) return;
