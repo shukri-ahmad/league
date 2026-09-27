@@ -58,13 +58,6 @@
         .lock-msg { display: none; background: rgba(231, 36, 41, 0.1); padding: 15px; border-left: 4px solid var(--red-gear); margin-bottom: 15px; font-weight: bold; color: #ff7b72; font-family: 'Orbitron', sans-serif;}
         .active-game-label { background: rgba(31, 65, 121, 0.2); padding: 12px; border-radius: 4px; color: #79c0ff; font-weight: bold; margin-bottom: 20px; border: 1px solid var(--blue-gear); display: none; font-family: 'Orbitron', sans-serif; text-align: center;}
 
-        /* MATCH RESULT BUTTONS */
-        .btn-result { padding: 8px 12px; border: 1px solid #30363d; border-radius: 4px; cursor: pointer; font-weight: bold; background: #0d1117; color: #8b949e; font-family: 'Orbitron', sans-serif; transition: 0.2s; font-size: 12px; margin: 0 3px;}
-        .btn-result:hover:not(:disabled) { background: #30363d; color: white;}
-        .btn-result.win-active { background: var(--neon-green); color: black; border-color: var(--neon-green); box-shadow: 0 0 10px rgba(0,255,136,0.3);}
-        .btn-result.draw-active { background: #f39c12; color: black; border-color: #f39c12; box-shadow: 0 0 10px rgba(243,156,18,0.3);}
-        .btn-result:disabled { opacity: 0.5; cursor: not-allowed; }
-
         /* TIMER UI */
         .timer-container { display: none; text-align: center; background: #0d1117; padding: 20px; border: 1px solid var(--blue-gear); border-radius: 8px; margin-bottom: 20px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
         .timer-display { font-size: 65px; font-family: 'Orbitron', sans-serif; color: var(--neon-green); font-weight: 900; text-shadow: 0 0 15px rgba(0,255,136,0.4); margin-bottom: 15px; line-height: 1;}
@@ -252,7 +245,6 @@
                       playSound('end');
                       endSoundPlayed = true;
                       
-                      // AUTO DRAW LOGIC 
                       if (game.activeMatchId && !isProcessingTimeUp) {
                           isProcessingTimeUp = true;
                           autoSetDraw(game.activeMatchId);
@@ -348,7 +340,6 @@
           if(currentGameId && allGamesData[currentGameId]) {
               currentGameIsLocked = allGamesData[currentGameId].isLocked || false;
               renderTimerUI(allGamesData[currentGameId]);
-              // Trigger a re-render of matches if the active match changed
               if (currentMatchesList.length > 0) renderMatchTable();
               applyGameLockUI();
           } else {
@@ -465,7 +456,6 @@
       switchTab('teamsTab', document.getElementById('tabBtn1'));
   };
 
-  // --- NEW MATCH RENDERER WITH TIMER CONTROLS ---
   function renderMatchTable() {
       if(!currentGameId || currentMatchesList.length === 0) return;
       const game = allGamesData[currentGameId];
@@ -476,9 +466,9 @@
                     <thead>
                         <tr>
                             <th style="width:10%">#</th>
-                            <th style="width:30%; text-align:right;">TEAM A</th>
+                            <th style="width:30%; text-align:right;">OFFENCE</th>
                             <th style="width:30%">MATCH CONTROLS</th>
-                            <th style="width:30%; text-align:left;">TEAM B</th>
+                            <th style="width:30%; text-align:left;">DEFENCE</th>
                         </tr>
                     </thead>
                   <tbody>`;
@@ -493,26 +483,22 @@
               controlsHtml = `<span style="color: var(--neon-green); font-weight:bold;">+2 PTS (FREE WIN)</span>`;
           } else {
               if (match.result) {
-                  // MATCH IS FINISHED
-                  let resText = match.result === 'DRAW' ? 'DRAW (TIME UP)' : `${match.result} WON (${formatTime(match.timeRemaining)} LEFT)`;
+                  let winnerLabel = match.result === 'A' ? 'OFFENCE' : 'DEFENCE';
+                  let resText = match.result === 'DRAW' ? 'DRAW (TIME UP)' : `${winnerLabel} WON (${formatTime(match.timeRemaining)} LEFT)`;
                   controlsHtml = `<div style="color:var(--neon-green); font-weight:bold; font-size:12px; margin-bottom:5px;">${resText}</div>
                                   <button class="btn-manage" onclick="redoMatch('${match.id}')" ${disabledAttr}>↻ REDO MATCH</button>`;
               } else {
-                  // MATCH IS PENDING
                   if (game.activeMatchId === match.id) {
-                      // THIS MATCH IS CURRENTLY PLAYING
                       controlsHtml = `
-                          <button class="btn-primary" style="padding: 5px 10px; font-size: 11px;" onclick="declareWinner('${match.id}', 'A')">A WINS</button>
+                          <button class="btn-primary" style="padding: 5px 10px; font-size: 11px;" onclick="declareWinner('${match.id}', 'A')">OFFENCE WINS</button>
                           <button class="btn-manage" style="padding: 5px 10px; font-size: 11px; background:var(--red-gear); color:white;" onclick="abortMatch()">ABORT</button>
-                          <button class="btn-primary" style="padding: 5px 10px; font-size: 11px;" onclick="declareWinner('${match.id}', 'B')">B WINS</button>
+                          <button class="btn-primary" style="padding: 5px 10px; font-size: 11px;" onclick="declareWinner('${match.id}', 'B')">DEFENCE WINS</button>
                       `;
                       html += `<tr class="active-match-row">`;
                   } else if (game.activeMatchId) {
-                      // ANOTHER MATCH IS PLAYING
                       controlsHtml = `<span style="color:#8b949e; font-size: 12px; font-weight:bold;">[ WAITING ]</span>`;
                       html += `<tr>`;
                   } else {
-                      // NO MATCH IS PLAYING
                       controlsHtml = `<button class="btn-manage" style="background: white;" onclick="startMatchTimer('${match.id}')" ${disabledAttr}>▶ START MATCH</button>`;
                       html += `<tr>`;
                   }
@@ -540,8 +526,6 @@
       html += `</tbody></table>`;
       container.innerHTML = html;
   }
-
-  // --- NEW TIMER / MATCH WORKFLOW FUNCTIONS ---
 
   window.startMatchTimer = async function(matchId) {
       if(currentGameIsLocked) return alert("SYSTEM LOCKED.");
@@ -605,8 +589,6 @@
       recalculateStandings();
   };
 
-  // --- CORE LEAGUE ENGINE (UPDATED FOR TIE-BREAKER) ---
-  
   window.generateLeagueSchedule = async function() {
       if(currentTeamsList.length < 3) return alert("MINIMUM 3 TEAMS REQUIRED FOR LEAGUE.");
       if(!confirm("SYSTEM PROMPT: GENERATE FULL LEAGUE SCHEDULE?\n\nThis will lock the roster and generate every match. This cannot be undone!")) return;
