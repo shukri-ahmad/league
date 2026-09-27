@@ -137,6 +137,8 @@
         <div id="gameLockedMessage" class="lock-msg">LEAGUE CONCLUDED. DATA FINALIZED.</div>
         <p id="matchesInfoMsg" style="font-size: 13px; color: #8b949e; margin-top: 0; font-family: 'Rajdhani', sans-serif;">SELECT A MATCH TO START THE TIMER. WINNER SAVES REMAINING TIME.</p>
         
+        <button id="addRoundBtn" class="btn-primary" onclick="addRematchRound()" style="width: 100%; margin-bottom: 20px; display: none; background: #9e58cc; box-shadow: 0 4px 15px rgba(158, 88, 204, 0.3);">[ ADD REMATCH ROUND (SWAP ROLES) ]</button>
+
         <div id="matches-container"></div>
         
         <button id="finishGameBtn" class="btn-red" onclick="finishGame()" style="width: 100%; margin-top: 25px; font-size: 16px; display: none;">TERMINATE LEAGUE (LOCK ALL SCORES)</button>
@@ -435,13 +437,18 @@
               document.getElementById("teamSetupControls").style.display = "none";
               document.getElementById("doneTeamsBtn").style.display = "none";
               document.getElementById("teamLockMessage").style.display = "block";
-              if(!currentGameIsLocked) document.getElementById("finishGameBtn").style.display = "block";
+              
+              if(!currentGameIsLocked) {
+                  document.getElementById("finishGameBtn").style.display = "block";
+                  document.getElementById("addRoundBtn").style.display = "block";
+              }
           } else {
               isTournamentStarted = false;
               document.getElementById("teamSetupControls").style.display = "block";
               document.getElementById("doneTeamsBtn").style.display = "block";
               document.getElementById("teamLockMessage").style.display = "none";
               document.getElementById("finishGameBtn").style.display = "none";
+              document.getElementById("addRoundBtn").style.display = "none";
               document.getElementById("matches-container").innerHTML = "";
               return;
           }
@@ -479,7 +486,6 @@
           let aColor = "var(--offence-color)";
           let bColor = "var(--defence-color)";
           
-          // Dim the loser to highlight the winner
           let aOpacity = match.result === 'B' ? "0.3" : "1";
           let bOpacity = match.result === 'A' ? "0.3" : "1";
           if (match.result === 'DRAW') {
@@ -488,57 +494,43 @@
 
           let controlsHtml = "";
 
-          if (match.teamB_id === "BYE") {
-              controlsHtml = `<span style="color: var(--neon-green); font-weight:bold;">+2 PTS (FREE WIN)</span>`;
+          if (match.result) {
+              let winnerLabel = match.result === 'A' ? 'OFFENCE' : 'DEFENCE';
+              let winColor = match.result === 'A' ? 'var(--offence-color)' : 'var(--defence-color)';
+              if(match.result === 'DRAW') {
+                  winnerLabel = 'DRAW';
+                  winColor = '#f39c12';
+              }
+              
+              let resText = match.result === 'DRAW' ? 'DRAW (TIME UP)' : `${winnerLabel} WON (${formatTime(match.timeRemaining)} LEFT)`;
+              controlsHtml = `<div style="color:${winColor}; font-weight:bold; font-size:12px; margin-bottom:5px;">${resText}</div>
+                              <button class="btn-manage" onclick="redoMatch('${match.id}')" ${disabledAttr}>↻ REDO MATCH</button>`;
           } else {
-              if (match.result) {
-                  let winnerLabel = match.result === 'A' ? 'OFFENCE' : 'DEFENCE';
-                  let winColor = match.result === 'A' ? 'var(--offence-color)' : 'var(--defence-color)';
-                  if(match.result === 'DRAW') {
-                      winnerLabel = 'DRAW';
-                      winColor = '#f39c12';
-                  }
-                  
-                  let resText = match.result === 'DRAW' ? 'DRAW (TIME UP)' : `${winnerLabel} WON (${formatTime(match.timeRemaining)} LEFT)`;
-                  controlsHtml = `<div style="color:${winColor}; font-weight:bold; font-size:12px; margin-bottom:5px;">${resText}</div>
-                                  <button class="btn-manage" onclick="redoMatch('${match.id}')" ${disabledAttr}>↻ REDO MATCH</button>`;
+              if (game.activeMatchId === match.id) {
+                  controlsHtml = `
+                      <div style="display: flex; justify-content: center; gap: 8px; width: 100%;">
+                          <button style="background:var(--offence-color); color:black; font-weight:bold; font-family:'Orbitron', sans-serif; border:none; padding:8px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="declareWinner('${match.id}', 'A')">OFFENCE WIN</button>
+                          <button style="background:#484f58; color:white; font-weight:bold; font-family:'Orbitron', sans-serif; border:none; padding:8px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="abortMatch()">ABORT</button>
+                          <button style="background:var(--defence-color); color:black; font-weight:bold; font-family:'Orbitron', sans-serif; border:none; padding:8px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="declareWinner('${match.id}', 'B')">DEFENCE WIN</button>
+                      </div>
+                  `;
+                  html += `<tr class="active-match-row">`;
+              } else if (game.activeMatchId) {
+                  controlsHtml = `<span style="color:#8b949e; font-size: 12px; font-weight:bold;">[ WAITING ]</span>`;
+                  html += `<tr>`;
               } else {
-                  if (game.activeMatchId === match.id) {
-                      controlsHtml = `
-                          <div style="display: flex; justify-content: center; gap: 8px; width: 100%;">
-                              <button style="background:var(--offence-color); color:black; font-weight:bold; font-family:'Orbitron', sans-serif; border:none; padding:8px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="declareWinner('${match.id}', 'A')">OFFENCE WIN</button>
-                              <button style="background:#484f58; color:white; font-weight:bold; font-family:'Orbitron', sans-serif; border:none; padding:8px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="abortMatch()">ABORT</button>
-                              <button style="background:var(--defence-color); color:black; font-weight:bold; font-family:'Orbitron', sans-serif; border:none; padding:8px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="declareWinner('${match.id}', 'B')">DEFENCE WIN</button>
-                          </div>
-                      `;
-                      html += `<tr class="active-match-row">`;
-                  } else if (game.activeMatchId) {
-                      controlsHtml = `<span style="color:#8b949e; font-size: 12px; font-weight:bold;">[ WAITING ]</span>`;
-                      html += `<tr>`;
-                  } else {
-                      controlsHtml = `<button class="btn-manage" style="background: white;" onclick="startMatchTimer('${match.id}')" ${disabledAttr}>▶ START MATCH</button>`;
-                      html += `<tr>`;
-                  }
+                  controlsHtml = `<button class="btn-manage" style="background: white;" onclick="startMatchTimer('${match.id}')" ${disabledAttr}>▶ START MATCH</button>`;
+                  html += `<tr>`;
               }
           }
 
-          if (match.teamB_id === "BYE") {
-              html += `
-                  <td style="font-weight:bold; font-family: 'Orbitron', sans-serif;">#${index+1}</td>
-                  <td class="team-name" style="text-align: right; padding-right:15px; color: ${aColor}; opacity: ${aOpacity};">${match.teamA_name}</td>
-                  <td>${controlsHtml}</td>
-                  <td class="team-name" style="text-align: left; padding-left:15px; color: #8b949e;">(BYE)</td>
-              </tr>
-              <tr class="divider-row"><td colspan="4"></td></tr>`;
-          } else {
-              html += `
-                  <td style="font-weight:bold; font-family: 'Orbitron', sans-serif;">#${index+1}</td>
-                  <td class="team-name" style="text-align: right; padding-right:15px; color: ${aColor}; opacity: ${aOpacity};">${match.teamA_name}</td>
-                  <td>${controlsHtml}</td>
-                  <td class="team-name" style="text-align: left; padding-left:15px; color: ${bColor}; opacity: ${bOpacity};">${match.teamB_name}</td>
-              </tr>
-              <tr class="divider-row"><td colspan="4"></td></tr>`;
-          }
+          html += `
+              <td style="font-weight:bold; font-family: 'Orbitron', sans-serif;">#${index+1}</td>
+              <td class="team-name" style="text-align: right; padding-right:15px; color: ${aColor}; opacity: ${aOpacity};">${match.teamA_name}</td>
+              <td>${controlsHtml}</td>
+              <td class="team-name" style="text-align: left; padding-left:15px; color: ${bColor}; opacity: ${bOpacity};">${match.teamB_name}</td>
+          </tr>
+          <tr class="divider-row"><td colspan="4"></td></tr>`;
       });
       html += `</tbody></table>`;
       container.innerHTML = html;
@@ -606,6 +598,35 @@
       recalculateStandings();
   };
 
+  // --- ADD REMATCH ROUND LOGIC (NO BYES) ---
+  window.addRematchRound = async function() {
+      if(currentGameIsLocked) return alert("SYSTEM LOCKED.");
+      if(!confirm("SYSTEM PROMPT: ADD REMATCH ROUND?\n\nThis will duplicate the original match sequence, SWAP the Offence/Defence roles, and append them to the schedule. Points and time saved will carry over.")) return;
+
+      let numTeams = currentTeamsList.length;
+      if (numTeams === 0) return;
+      
+      // Calculate how many internal 'rounds' were in a single League cycle
+      let R = (numTeams % 2 === 0) ? numTeams - 1 : numTeams;
+      
+      let maxRound = 0;
+      currentMatchesList.forEach(m => { if(m.round > maxRound) maxRound = m.round; });
+
+      // Grab the matches from the last full cycle
+      let matchesToCopy = currentMatchesList.filter(m => m.round > maxRound - R);
+
+      for (let m of matchesToCopy) {
+          // SWAP A AND B ROLES
+          await addDoc(collection(db, "games", currentGameId, "matches"), {
+              round: m.round + R,
+              teamA_id: m.teamB_id, teamA_name: m.teamB_name,
+              teamB_id: m.teamA_id, teamB_name: m.teamA_name,
+              result: null, timeRemaining: 0
+          });
+      }
+      recalculateStandings();
+  };
+
   window.generateLeagueSchedule = async function() {
       if(currentTeamsList.length < 3) return alert("MINIMUM 3 TEAMS REQUIRED FOR LEAGUE.");
       if(!confirm("SYSTEM PROMPT: GENERATE FULL LEAGUE SCHEDULE?\n\nThis will lock the roster and generate every match. This cannot be undone!")) return;
@@ -635,6 +656,7 @@
               let teamA = teams[firstHalf[i]];
               let teamB = teams[secondHalf[i]];
               
+              // NEVER generate a match record if one of them is the dummy BYE team
               if (!teamB.isBye && !teamA.isBye) {
                   await addDoc(collection(db, "games", currentGameId, "matches"), {
                       round: round, 
@@ -717,17 +739,20 @@
 
   function applyGameLockUI() {
       const finishBtn = document.getElementById("finishGameBtn");
+      const addRoundBtn = document.getElementById("addRoundBtn");
       const lockMsg = document.getElementById("gameLockedMessage");
       const matchesMsg = document.getElementById("matchesInfoMsg");
 
       if (currentGameIsLocked) {
           finishBtn.style.display = "none";
+          addRoundBtn.style.display = "none";
           matchesMsg.style.display = "none";
           lockMsg.style.display = "block";
       } else {
           matchesMsg.style.display = "block";
           lockMsg.style.display = "none";
           finishBtn.style.display = isTournamentStarted ? "block" : "none";
+          addRoundBtn.style.display = isTournamentStarted ? "block" : "none";
       }
   }
 
