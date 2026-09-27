@@ -39,13 +39,10 @@
 
         input[type="text"], select { padding: 10px; width: 65%; border: 1px solid #30363d; border-radius: 4px; background: #0d1117; color: white; font-family: 'Rajdhani', sans-serif; font-size: 16px;}
         select { width: 30%; margin-left: 10px; font-weight: bold; }
-        input[type="number"] { width: 60px; padding: 8px; text-align: center; font-weight: bold; border: 2px solid var(--blue-gear); border-radius: 4px; background: #0d1117; color: white; font-family: 'Orbitron', sans-serif; font-size: 16px;}
-        input[type="number"]:disabled { background-color: #090c10; border-color: #30363d; color: #484f58; cursor: not-allowed; }
         
         button { padding: 10px 15px; color: black; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-family: 'Orbitron', sans-serif; letter-spacing: 1px; text-transform: uppercase; transition: 0.2s;}
         button.btn-primary { background: var(--league-grad); box-shadow: 0 4px 15px rgba(0, 255, 136, 0.2); color: white; }
         button.btn-primary:hover { filter: brightness(1.2); }
-        button.btn-blue { background-color: var(--blue-gear); width: 100%; margin-top: 15px; font-size: 16px; border: 1px solid #30363d; color: white;}
         button.btn-red { background-color: var(--red-gear); padding: 5px 10px; font-size: 12px; color: white;}
         button.btn-manage { background-color: #f39c12; padding: 5px 10px; font-size: 12px; color: black; }
         button.btn-restart { background-color: var(--neon-green); padding: 5px 10px; font-size: 12px; color: black; }
@@ -56,10 +53,17 @@
         td, th { padding: 12px; border: 1px solid #30363d; text-align: center; }
         th { background: #0d1117; color: #8b949e; font-family: 'Orbitron', sans-serif; font-size: 14px;}
         .divider-row td { background-color: var(--blue-gear); height: 2px; padding: 0; opacity: 0.5; border: none;}
-        .team-name { font-weight: bold; text-align: left; padding-left: 15px; color: white;}
+        .team-name { font-weight: bold; color: white;}
         
         .lock-msg { display: none; background: rgba(231, 36, 41, 0.1); padding: 15px; border-left: 4px solid var(--red-gear); margin-bottom: 15px; font-weight: bold; color: #ff7b72; font-family: 'Orbitron', sans-serif;}
         .active-game-label { background: rgba(31, 65, 121, 0.2); padding: 12px; border-radius: 4px; color: #79c0ff; font-weight: bold; margin-bottom: 20px; border: 1px solid var(--blue-gear); display: none; font-family: 'Orbitron', sans-serif; text-align: center;}
+
+        /* MATCH RESULT BUTTONS */
+        .btn-result { padding: 8px 12px; border: 1px solid #30363d; border-radius: 4px; cursor: pointer; font-weight: bold; background: #0d1117; color: #8b949e; font-family: 'Orbitron', sans-serif; transition: 0.2s; font-size: 12px; margin: 0 3px;}
+        .btn-result:hover:not(:disabled) { background: #30363d; color: white;}
+        .btn-result.win-active { background: var(--neon-green); color: black; border-color: var(--neon-green); box-shadow: 0 0 10px rgba(0,255,136,0.3);}
+        .btn-result.draw-active { background: #f39c12; color: black; border-color: #f39c12; box-shadow: 0 0 10px rgba(243,156,18,0.3);}
+        .btn-result:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* TIMER UI */
         .timer-container { display: none; text-align: center; background: #0d1117; padding: 20px; border: 1px solid var(--blue-gear); border-radius: 8px; margin-bottom: 20px; box-shadow: inset 0 0 20px rgba(0,0,0,0.8); }
@@ -67,6 +71,8 @@
         .timer-display.paused { color: #f39c12; text-shadow: 0 0 15px rgba(243, 156, 18, 0.4); }
         .timer-display.stopped { color: var(--red-gear); text-shadow: 0 0 15px rgba(231, 36, 41, 0.4); }
         .timer-controls button { margin: 0 5px; font-size: 14px; padding: 10px 20px;}
+        
+        .active-match-row { background: rgba(0, 255, 136, 0.05); }
     </style>
 </head>
 <body id="adminBody">
@@ -84,7 +90,7 @@
     <div class="tab-menu">
         <button id="tabBtn0" class="tab-btn active" onclick="switchTab('gamesTab', this)">LEAGUES</button>
         <button id="tabBtn1" class="tab-btn" onclick="switchTab('teamsTab', this)">ROSTER</button>
-        <button id="tabBtn2" class="tab-btn" onclick="switchTab('roundsTab', this)">MATCH SCHEDULE</button>
+        <button id="tabBtn2" class="tab-btn" onclick="switchTab('roundsTab', this)">MATCH CONTROLS</button>
     </div>
 
     <div id="activeGameDisplay" class="active-game-label">TARGET LEAGUE: NULL</div>
@@ -94,9 +100,7 @@
         <div style="color: #8b949e; font-size: 12px; font-weight: bold; letter-spacing: 2px; margin-bottom: 5px;">MATCH TIMER</div>
         <div id="timeClock" class="timer-display">00:00</div>
         <div class="timer-controls">
-            <button class="btn-primary" onclick="timerAction('start')" style="background: var(--neon-green); color: black;">START MATCH</button>
-            <button class="btn-manage" onclick="timerAction('pause')">PAUSE</button>
-            <button class="btn-red" onclick="timerAction('reset')">RESET</button>
+            <button class="btn-manage" onclick="timerAction('pause')">PAUSE/RESUME TIMER</button>
         </div>
     </div>
 
@@ -131,12 +135,12 @@
             <thead><tr><th>TEAM</th><th>ACTION</th></tr></thead>
             <tbody id="teams-list-body"></tbody>
         </table>
-        <button id="doneTeamsBtn" class="btn-primary" onclick="generateLeagueSchedule()" style="width: 100%; margin-top: 20px;">[ GENERATE CONTINUOUS LEAGUE SCHEDULE ]</button>
+        <button id="doneTeamsBtn" class="btn-primary" onclick="generateLeagueSchedule()" style="width: 100%; margin-top: 20px;">[ GENERATE CONTINUOUS SCHEDULE ]</button>
     </div>
 
     <div id="roundsTab" class="tab-content">
         <div id="gameLockedMessage" class="lock-msg">LEAGUE CONCLUDED. DATA FINALIZED.</div>
-        <p id="matchesInfoMsg" style="font-size: 13px; color: #8b949e; margin-top: 0; font-family: 'Rajdhani', sans-serif;">DATA AUTO-SAVES UPON INPUT.</p>
+        <p id="matchesInfoMsg" style="font-size: 13px; color: #8b949e; margin-top: 0; font-family: 'Rajdhani', sans-serif;">SELECT A MATCH TO START THE TIMER. WINNER SAVES REMAINING TIME.</p>
         
         <div id="matches-container"></div>
         
@@ -171,6 +175,7 @@
   let allGamesData = {}; 
   let currentGameIsLocked = false;
   let isSuperAdminUser = false; 
+  let isProcessingTimeUp = false;
   
   let unsubGames = null;
   let unsubTeams = null;
@@ -246,6 +251,12 @@
                   if (!endSoundPlayed) {
                       playSound('end');
                       endSoundPlayed = true;
+                      
+                      // AUTO DRAW LOGIC 
+                      if (game.activeMatchId && !isProcessingTimeUp) {
+                          isProcessingTimeUp = true;
+                          autoSetDraw(game.activeMatchId);
+                      }
                   }
               } else {
                   let currentSecond = Math.floor(remaining / 1000);
@@ -259,6 +270,15 @@
       }
   }
 
+  async function autoSetDraw(matchId) {
+      try {
+          await updateDoc(doc(db, "games", currentGameId, "matches", matchId), { result: 'DRAW', timeRemaining: 0 });
+          await updateDoc(doc(db, "games", currentGameId), { activeMatchId: null, timerState: 'idle' });
+          await recalculateStandings();
+      } catch(e) { console.error("Auto-Draw Error:", e); }
+      isProcessingTimeUp = false;
+  }
+
   window.timerAction = async function(action) {
       if (!currentGameId) return;
       const ctx = getAudioCtx();
@@ -267,28 +287,14 @@
       const game = allGamesData[currentGameId];
       let updates = {};
 
-      if (action === 'start') {
-          if (game.timerState === 'running' || game.timerRemaining <= 0) return;
-          updates = {
-              timerState: 'running',
-              timerEndTime: Date.now() + game.timerRemaining
-          };
-          playSound('start');
-      } else if (action === 'pause') {
-          if (game.timerState !== 'running') return;
-          let remaining = Math.max(0, game.timerEndTime - Date.now());
-          updates = {
-              timerState: 'paused',
-              timerRemaining: remaining
-          };
-      } else if (action === 'reset') {
-          if(!confirm("Reset match timer to starting duration?")) return;
-          updates = {
-              timerState: 'idle',
-              timerRemaining: (game.timerDuration || 180) * 1000,
-              timerEndTime: 0
-          };
-      }
+      if (action === 'pause') {
+          if (game.timerState === 'running') {
+              let remaining = Math.max(0, game.timerEndTime - Date.now());
+              updates = { timerState: 'paused', timerRemaining: remaining };
+          } else if (game.timerState === 'paused' && game.activeMatchId) {
+              updates = { timerState: 'running', timerEndTime: Date.now() + game.timerRemaining };
+          } else { return; }
+      } 
       await updateDoc(doc(db, "games", currentGameId), updates);
   };
 
@@ -316,9 +322,7 @@
           ? query(collection(db, "games")) 
           : query(collection(db, "games"), where("createdBy", "==", user.uid)); 
           
-      if(isSuperAdminUser){
-          document.getElementById("systemsHeader").innerText = "ALL LEAGUES (SUPER ADMIN)";
-      }
+      if(isSuperAdminUser) document.getElementById("systemsHeader").innerText = "ALL LEAGUES (SUPER ADMIN)";
       
       unsubGames = onSnapshot(qGames, (snapshot) => {
           const tbody = document.getElementById("games-list-body");
@@ -344,6 +348,8 @@
           if(currentGameId && allGamesData[currentGameId]) {
               currentGameIsLocked = allGamesData[currentGameId].isLocked || false;
               renderTimerUI(allGamesData[currentGameId]);
+              // Trigger a re-render of matches if the active match changed
+              if (currentMatchesList.length > 0) renderMatchTable();
               applyGameLockUI();
           } else {
               document.getElementById("masterTimerUI").style.display = "none";
@@ -369,7 +375,8 @@
       const durationSeconds = durationMins * 60;
       await addDoc(collection(db, "games"), { 
           name: name, createdAt: new Date(), isLocked: false, createdBy: auth.currentUser.uid,
-          timerDuration: durationSeconds, timerState: 'idle', timerRemaining: durationSeconds * 1000, timerEndTime: 0
+          timerDuration: durationSeconds, timerState: 'idle', timerRemaining: durationSeconds * 1000, timerEndTime: 0,
+          activeMatchId: null
       });
       document.getElementById("gameName").value = "";
   };
@@ -389,7 +396,7 @@
       if(!confirm(`REBOOT "${name}"?\nAll matches will be deleted. Teams remain.`)) return;
       const game = allGamesData[id];
       await updateDoc(doc(db, "games", id), { 
-          isLocked: false, timerState: 'idle', timerRemaining: (game.timerDuration || 180) * 1000, timerEndTime: 0 
+          isLocked: false, timerState: 'idle', timerRemaining: (game.timerDuration || 180) * 1000, timerEndTime: 0, activeMatchId: null 
       });
       
       const matchesSnap = await getDocs(collection(db, "games", id, "matches"));
@@ -399,7 +406,7 @@
       
       const teamsSnap = await getDocs(collection(db, "games", id, "teams"));
       const teamPromises = [];
-      teamsSnap.forEach(teamDoc => { teamPromises.push(updateDoc(doc(db, "games", id, "teams", teamDoc.id), { points: 0, balls: 0 })); });
+      teamsSnap.forEach(teamDoc => { teamPromises.push(updateDoc(doc(db, "games", id, "teams", teamDoc.id), { points: 0, totalTimeRemaining: 0 })); });
       await Promise.all(teamPromises);
       
       alert(`LEAGUE REBOOTED: "${name}"`);
@@ -428,8 +435,6 @@
 
       const qMatches = query(collection(db, "games", currentGameId, "matches"), orderBy("round", "asc"));
       unsubMatches = onSnapshot(qMatches, (snapshot) => {
-          const container = document.getElementById("matches-container");
-          container.innerHTML = "";
           currentMatchesList = [];
 
           if (snapshot.size > 0) {
@@ -444,6 +449,7 @@
               document.getElementById("doneTeamsBtn").style.display = "block";
               document.getElementById("teamLockMessage").style.display = "none";
               document.getElementById("finishGameBtn").style.display = "none";
+              document.getElementById("matches-container").innerHTML = "";
               return;
           }
           renderTeamsList();
@@ -453,101 +459,157 @@
               match.id = docSnap.id;
               currentMatchesList.push(match);
           });
-
-          const disabledAttr = currentGameIsLocked ? "disabled" : "";
-
-          // RENDER AS ONE CONTINUOUS TABLE
-          let html = `<table><thead><tr><th>MATCH</th><th>TEAM</th><th>SCORE</th></tr></thead><tbody>`;
           
-          currentMatchesList.forEach((match, index) => {
-              const aBalls = match.teamA_balls === null ? "" : match.teamA_balls;
-              const bBalls = match.teamB_balls === null ? "" : match.teamB_balls;
-              
-              let aStatus = "", bStatus = "";
-              
-              if (aBalls !== "" && bBalls !== "") {
-                  if (aBalls < bBalls) {
-                      aStatus = `<span style="color: var(--neon-green); font-size: 14px; margin-left: 10px;">[WIN]</span>`;
-                      bStatus = `<span style="color: var(--red-gear); font-size: 14px; margin-left: 10px;">[LOSS]</span>`;
-                  } else if (bBalls < aBalls) {
-                      bStatus = `<span style="color: var(--neon-green); font-size: 14px; margin-left: 10px;">[WIN]</span>`;
-                      aStatus = `<span style="color: var(--red-gear); font-size: 14px; margin-left: 10px;">[LOSS]</span>`;
-                  } else {
-                      aStatus = `<span style="color: #f39c12; font-size: 14px; margin-left: 10px;">[DRAW]</span>`;
-                      bStatus = `<span style="color: #f39c12; font-size: 14px; margin-left: 10px;">[DRAW]</span>`;
-                  }
-              }
-
-              html += `
-              <tr>
-                  <td rowspan="2" style="font-weight:bold;">#${index+1}</td>
-                  <td class="team-name">${match.teamA_name} ${aStatus}</td>
-                  <td><input type="number" min="0" value="${aBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'A', this.value)"></td>
-              </tr>
-              <tr>
-                  <td class="team-name">${match.teamB_name} ${bStatus}</td>
-                  <td><input type="number" min="0" value="${bBalls}" ${disabledAttr} onchange="updateScore('${match.id}', 'B', this.value)"></td>
-              </tr>
-              <tr class="divider-row"><td colspan="3"></td></tr>`;
-          });
-          html += `</tbody></table>`;
-          container.innerHTML = html;
+          renderMatchTable();
       });
       switchTab('teamsTab', document.getElementById('tabBtn1'));
   };
 
-  function applyGameLockUI() {
-      const finishBtn = document.getElementById("finishGameBtn");
-      const lockMsg = document.getElementById("gameLockedMessage");
-      const matchesMsg = document.getElementById("matchesInfoMsg");
+  // --- NEW MATCH RENDERER WITH TIMER CONTROLS ---
+  function renderMatchTable() {
+      if(!currentGameId || currentMatchesList.length === 0) return;
+      const game = allGamesData[currentGameId];
+      const container = document.getElementById("matches-container");
+      const disabledAttr = currentGameIsLocked ? "disabled" : "";
 
-      if (currentGameIsLocked) {
-          finishBtn.style.display = "none";
-          matchesMsg.style.display = "none";
-          lockMsg.style.display = "block";
-          document.querySelectorAll("#matches-container input").forEach(input => input.disabled = true);
-      } else {
-          matchesMsg.style.display = "block";
-          lockMsg.style.display = "none";
-          finishBtn.style.display = isTournamentStarted ? "block" : "none";
-      }
-  }
+      let html = `<table style="font-size: 16px;">
+                    <thead>
+                        <tr>
+                            <th style="width:10%">#</th>
+                            <th style="width:30%; text-align:right;">TEAM A</th>
+                            <th style="width:30%">MATCH CONTROLS</th>
+                            <th style="width:30%; text-align:left;">TEAM B</th>
+                        </tr>
+                    </thead>
+                  <tbody>`;
+      
+      currentMatchesList.forEach((match, index) => {
+          let aColor = match.result === 'A' ? 'var(--neon-green)' : (match.result === 'B' ? 'var(--red-gear)' : 'white');
+          let bColor = match.result === 'B' ? 'var(--neon-green)' : (match.result === 'A' ? 'var(--red-gear)' : 'white');
 
-  function renderTeamsList() {
-      document.getElementById("teamCount").innerText = currentTeamsList.length;
-      const tbody = document.getElementById("teams-list-body");
-      let htmlString = "";
-      currentTeamsList.forEach(team => {
-          const actionHtml = isTournamentStarted 
-              ? `<span style="color: #6e7681; font-style: italic;">LOCKED</span>` 
-              : `<button class="btn-red" onclick="deleteTeam('${team.id}', '${team.name}')">DEL</button>`;
-          htmlString += `<tr><td style="text-align: left; padding-left: 15px; font-weight: bold; color:white;">${team.name}</td><td>${actionHtml}</td></tr>`;
+          let controlsHtml = "";
+
+          if (match.teamB_id === "BYE") {
+              controlsHtml = `<span style="color: var(--neon-green); font-weight:bold;">+2 PTS (FREE WIN)</span>`;
+          } else {
+              if (match.result) {
+                  // MATCH IS FINISHED
+                  let resText = match.result === 'DRAW' ? 'DRAW (TIME UP)' : `${match.result} WON (${formatTime(match.timeRemaining)} LEFT)`;
+                  controlsHtml = `<div style="color:var(--neon-green); font-weight:bold; font-size:12px; margin-bottom:5px;">${resText}</div>
+                                  <button class="btn-manage" onclick="redoMatch('${match.id}')" ${disabledAttr}>↻ REDO MATCH</button>`;
+              } else {
+                  // MATCH IS PENDING
+                  if (game.activeMatchId === match.id) {
+                      // THIS MATCH IS CURRENTLY PLAYING
+                      controlsHtml = `
+                          <button class="btn-primary" style="padding: 5px 10px; font-size: 11px;" onclick="declareWinner('${match.id}', 'A')">A WINS</button>
+                          <button class="btn-manage" style="padding: 5px 10px; font-size: 11px; background:var(--red-gear); color:white;" onclick="abortMatch()">ABORT</button>
+                          <button class="btn-primary" style="padding: 5px 10px; font-size: 11px;" onclick="declareWinner('${match.id}', 'B')">B WINS</button>
+                      `;
+                      html += `<tr class="active-match-row">`;
+                  } else if (game.activeMatchId) {
+                      // ANOTHER MATCH IS PLAYING
+                      controlsHtml = `<span style="color:#8b949e; font-size: 12px; font-weight:bold;">[ WAITING ]</span>`;
+                      html += `<tr>`;
+                  } else {
+                      // NO MATCH IS PLAYING
+                      controlsHtml = `<button class="btn-manage" style="background: white;" onclick="startMatchTimer('${match.id}')" ${disabledAttr}>▶ START MATCH</button>`;
+                      html += `<tr>`;
+                  }
+              }
+          }
+
+          if (match.teamB_id === "BYE") {
+              html += `
+                  <td style="font-weight:bold; font-family: 'Orbitron', sans-serif;">#${index+1}</td>
+                  <td class="team-name" style="text-align: right; padding-right:15px; color: var(--neon-green);">${match.teamA_name}</td>
+                  <td>${controlsHtml}</td>
+                  <td class="team-name" style="text-align: left; padding-left:15px; color: #8b949e;">(BYE)</td>
+              </tr>
+              <tr class="divider-row"><td colspan="4"></td></tr>`;
+          } else {
+              html += `
+                  <td style="font-weight:bold; font-family: 'Orbitron', sans-serif;">#${index+1}</td>
+                  <td class="team-name" style="text-align: right; padding-right:15px; color: ${aColor};">${match.teamA_name}</td>
+                  <td>${controlsHtml}</td>
+                  <td class="team-name" style="text-align: left; padding-left:15px; color: ${bColor};">${match.teamB_name}</td>
+              </tr>
+              <tr class="divider-row"><td colspan="4"></td></tr>`;
+          }
       });
-      tbody.innerHTML = htmlString;
+      html += `</tbody></table>`;
+      container.innerHTML = html;
   }
 
-  window.addTeam = async function() {
-      try {
-          const name = document.getElementById("teamName").value.trim();
-          if(!currentGameId) return alert("ERROR: No league selected.");
-          if(!name) return alert("ERROR: Type a team name.");
+  // --- NEW TIMER / MATCH WORKFLOW FUNCTIONS ---
 
-          await addDoc(collection(db, "games", currentGameId, "teams"), { name: name, points: 0, balls: 0 });
-          document.getElementById("teamName").value = ""; 
-      } catch (error) { alert("SYSTEM ERROR: " + error.message); }
+  window.startMatchTimer = async function(matchId) {
+      if(currentGameIsLocked) return alert("SYSTEM LOCKED.");
+      const ctx = getAudioCtx();
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+      
+      const game = allGamesData[currentGameId];
+      const durationMs = (game.timerDuration || 120) * 1000;
+
+      await updateDoc(doc(db, "games", currentGameId), { 
+          activeMatchId: matchId, 
+          timerState: 'running', 
+          timerRemaining: durationMs,
+          timerEndTime: Date.now() + durationMs 
+      });
+      playSound('start');
   };
 
-  document.getElementById("teamName").addEventListener("keypress", function(event) {
-      if (event.key === "Enter") { event.preventDefault(); window.addTeam(); }
-  });
+  window.declareWinner = async function(matchId, winnerSide) {
+      if(currentGameIsLocked) return alert("SYSTEM LOCKED.");
+      const game = allGamesData[currentGameId];
+      
+      let remainingMs = 0;
+      if (game.timerState === 'running') {
+          remainingMs = Math.max(0, game.timerEndTime - Date.now());
+      } else if (game.timerState === 'paused') {
+          remainingMs = game.timerRemaining;
+      }
 
-  window.deleteTeam = async function(id, name) {
-      if(confirm(`DELETE TEAM: ${name}?`)) await deleteDoc(doc(db, "games", currentGameId, "teams", id));
+      await updateDoc(doc(db, "games", currentGameId, "matches", matchId), { 
+          result: winnerSide, 
+          timeRemaining: remainingMs 
+      });
+      
+      await updateDoc(doc(db, "games", currentGameId), { 
+          activeMatchId: null, 
+          timerState: 'idle',
+          timerRemaining: (game.timerDuration || 120) * 1000
+      });
+      
+      recalculateStandings();
   };
 
+  window.abortMatch = async function() {
+      const game = allGamesData[currentGameId];
+      await updateDoc(doc(db, "games", currentGameId), { 
+          activeMatchId: null, 
+          timerState: 'idle',
+          timerRemaining: (game.timerDuration || 120) * 1000
+      });
+  };
+
+  window.redoMatch = async function(matchId) {
+      if(currentGameIsLocked) return alert("SYSTEM LOCKED.");
+      if(!confirm("Wipe this match result and play it again?")) return;
+      
+      await updateDoc(doc(db, "games", currentGameId, "matches", matchId), { 
+          result: null, 
+          timeRemaining: 0 
+      });
+      recalculateStandings();
+  };
+
+  // --- CORE LEAGUE ENGINE (UPDATED FOR TIE-BREAKER) ---
+  
   window.generateLeagueSchedule = async function() {
       if(currentTeamsList.length < 3) return alert("MINIMUM 3 TEAMS REQUIRED FOR LEAGUE.");
-      if(!confirm("SYSTEM PROMPT: GENERATE FULL LEAGUE SCHEDULE?\n\nThis will lock the roster and generate every match for the entire season at once. This cannot be undone!")) return;
+      if(!confirm("SYSTEM PROMPT: GENERATE FULL LEAGUE SCHEDULE?\n\nThis will lock the roster and generate every match. This cannot be undone!")) return;
       
       switchTab('roundsTab', document.getElementById('tabBtn2'));
 
@@ -574,13 +636,12 @@
               let teamA = teams[firstHalf[i]];
               let teamB = teams[secondHalf[i]];
               
-              // If either team is the BYE team, do NOT create a match entry
               if (!teamB.isBye && !teamA.isBye) {
                   await addDoc(collection(db, "games", currentGameId, "matches"), {
-                      round: round, // internal sorting
+                      round: round, 
                       teamA_id: teamA.id, teamA_name: teamA.name,
                       teamB_id: teamB.id, teamB_name: teamB.name, 
-                      teamA_balls: null, teamB_balls: null
+                      result: null, timeRemaining: 0
                   });
               }
           }
@@ -589,39 +650,85 @@
       recalculateStandings();
   };
 
-  window.updateScore = async function(matchId, teamSide, value) {
-      if(currentGameIsLocked) return alert("SYSTEM LOCKED.");
-      const updateData = {};
-      const numValue = value === "" ? null : parseInt(value);
-      if (teamSide === 'A') updateData.teamA_balls = numValue;
-      if (teamSide === 'B') updateData.teamB_balls = numValue;
-      await updateDoc(doc(db, "games", currentGameId, "matches", matchId), updateData);
-      recalculateStandings();
-  };
-
   async function recalculateStandings() {
       let teamStats = {};
-      currentTeamsList.forEach(t => teamStats[t.id] = { points: 0, balls: 0 });
+      currentTeamsList.forEach(t => teamStats[t.id] = { points: 0, totalTimeRemaining: 0 });
 
       const matchesSnap = await getDocs(collection(db, "games", currentGameId, "matches"));
       matchesSnap.forEach(docSnap => {
           const match = docSnap.data();
-          if(match.teamA_balls !== null && match.teamB_balls !== null) {
-              let aPts = 0, bPts = 0;
-              // WIN = 3 PTS, DRAW = 1 PT, LOSS = 0 PTS
-              if(match.teamA_balls < match.teamB_balls) { aPts = 3; bPts = 0; }
-              else if(match.teamB_balls < match.teamA_balls) { aPts = 0; bPts = 3; }
-              else { aPts = 1; bPts = 1; }
-
-              if(teamStats[match.teamA_id]) { teamStats[match.teamA_id].points += aPts; teamStats[match.teamA_id].balls += match.teamA_balls; }
-              if(teamStats[match.teamB_id]) { teamStats[match.teamB_id].points += bPts; teamStats[match.teamB_id].balls += match.teamB_balls; }
+          
+          if (match.result === 'A') {
+              if (teamStats[match.teamA_id]) {
+                  teamStats[match.teamA_id].points += 3;
+                  teamStats[match.teamA_id].totalTimeRemaining += (match.timeRemaining || 0);
+              }
+          } else if (match.result === 'B') {
+              if (teamStats[match.teamB_id]) {
+                  teamStats[match.teamB_id].points += 3;
+                  teamStats[match.teamB_id].totalTimeRemaining += (match.timeRemaining || 0);
+              }
+          } else if (match.result === 'DRAW') {
+              if (teamStats[match.teamA_id]) teamStats[match.teamA_id].points += 1;
+              if (teamStats[match.teamB_id]) teamStats[match.teamB_id].points += 1;
           }
       });
 
       for (let teamId in teamStats) {
           if(teamStats[teamId]) {
-              await updateDoc(doc(db, "games", currentGameId, "teams", teamId), { points: teamStats[teamId].points, balls: teamStats[teamId].balls });
+              await updateDoc(doc(db, "games", currentGameId, "teams", teamId), { 
+                  points: teamStats[teamId].points,
+                  totalTimeRemaining: teamStats[teamId].totalTimeRemaining 
+              });
           }
+      }
+  }
+
+  function renderTeamsList() {
+      document.getElementById("teamCount").innerText = currentTeamsList.length;
+      const tbody = document.getElementById("teams-list-body");
+      let htmlString = "";
+      currentTeamsList.forEach(team => {
+          const actionHtml = isTournamentStarted 
+              ? `<span style="color: #6e7681; font-style: italic;">LOCKED</span>` 
+              : `<button class="btn-red" onclick="deleteTeam('${team.id}', '${team.name}')">DEL</button>`;
+          htmlString += `<tr><td style="text-align: left; padding-left: 15px; font-weight: bold; color:white;">${team.name}</td><td>${actionHtml}</td></tr>`;
+      });
+      tbody.innerHTML = htmlString;
+  }
+
+  window.addTeam = async function() {
+      try {
+          const name = document.getElementById("teamName").value.trim();
+          if(!currentGameId) return alert("ERROR: No league selected.");
+          if(!name) return alert("ERROR: Type a team name.");
+
+          await addDoc(collection(db, "games", currentGameId, "teams"), { name: name, points: 0, totalTimeRemaining: 0 });
+          document.getElementById("teamName").value = ""; 
+      } catch (error) { alert("SYSTEM ERROR: " + error.message); }
+  };
+
+  document.getElementById("teamName").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") { event.preventDefault(); window.addTeam(); }
+  });
+
+  window.deleteTeam = async function(id, name) {
+      if(confirm(`DELETE TEAM: ${name}?`)) await deleteDoc(doc(db, "games", currentGameId, "teams", id));
+  };
+
+  function applyGameLockUI() {
+      const finishBtn = document.getElementById("finishGameBtn");
+      const lockMsg = document.getElementById("gameLockedMessage");
+      const matchesMsg = document.getElementById("matchesInfoMsg");
+
+      if (currentGameIsLocked) {
+          finishBtn.style.display = "none";
+          matchesMsg.style.display = "none";
+          lockMsg.style.display = "block";
+      } else {
+          matchesMsg.style.display = "block";
+          lockMsg.style.display = "none";
+          finishBtn.style.display = isTournamentStarted ? "block" : "none";
       }
   }
 
