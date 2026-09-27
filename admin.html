@@ -15,6 +15,8 @@
             --border-glow: #1f4179;
             --text-main: #c9d1d9;
             --neon-green: #00ff88;
+            --offence-color: #00d2ff;
+            --defence-color: #ff9d00;
         }
 
         body { font-family: 'Rajdhani', sans-serif; background-color: var(--bg-dark); color: var(--text-main); padding: 20px; display: none; background-image: radial-gradient(circle at 50% 0%, rgba(0, 255, 136, 0.1) 0%, transparent 50%);}
@@ -53,7 +55,7 @@
         td, th { padding: 12px; border: 1px solid #30363d; text-align: center; }
         th { background: #0d1117; color: #8b949e; font-family: 'Orbitron', sans-serif; font-size: 14px;}
         .divider-row td { background-color: var(--blue-gear); height: 2px; padding: 0; opacity: 0.5; border: none;}
-        .team-name { font-weight: bold; color: white;}
+        .team-name { font-weight: bold; color: white; transition: opacity 0.3s;}
         
         .lock-msg { display: none; background: rgba(231, 36, 41, 0.1); padding: 15px; border-left: 4px solid var(--red-gear); margin-bottom: 15px; font-weight: bold; color: #ff7b72; font-family: 'Orbitron', sans-serif;}
         .active-game-label { background: rgba(31, 65, 121, 0.2); padding: 12px; border-radius: 4px; color: #79c0ff; font-weight: bold; margin-bottom: 20px; border: 1px solid var(--blue-gear); display: none; font-family: 'Orbitron', sans-serif; text-align: center;}
@@ -466,16 +468,23 @@
                     <thead>
                         <tr>
                             <th style="width:10%">#</th>
-                            <th style="width:30%; text-align:right;">OFFENCE</th>
+                            <th style="width:30%; text-align:right; color: var(--offence-color);">OFFENCE</th>
                             <th style="width:30%">MATCH CONTROLS</th>
-                            <th style="width:30%; text-align:left;">DEFENCE</th>
+                            <th style="width:30%; text-align:left; color: var(--defence-color);">DEFENCE</th>
                         </tr>
                     </thead>
                   <tbody>`;
       
       currentMatchesList.forEach((match, index) => {
-          let aColor = match.result === 'A' ? 'var(--neon-green)' : (match.result === 'B' ? 'var(--red-gear)' : 'white');
-          let bColor = match.result === 'B' ? 'var(--neon-green)' : (match.result === 'A' ? 'var(--red-gear)' : 'white');
+          let aColor = "var(--offence-color)";
+          let bColor = "var(--defence-color)";
+          
+          // Dim the loser to highlight the winner
+          let aOpacity = match.result === 'B' ? "0.3" : "1";
+          let bOpacity = match.result === 'A' ? "0.3" : "1";
+          if (match.result === 'DRAW') {
+              aOpacity = "0.7"; bOpacity = "0.7";
+          }
 
           let controlsHtml = "";
 
@@ -484,15 +493,23 @@
           } else {
               if (match.result) {
                   let winnerLabel = match.result === 'A' ? 'OFFENCE' : 'DEFENCE';
+                  let winColor = match.result === 'A' ? 'var(--offence-color)' : 'var(--defence-color)';
+                  if(match.result === 'DRAW') {
+                      winnerLabel = 'DRAW';
+                      winColor = '#f39c12';
+                  }
+                  
                   let resText = match.result === 'DRAW' ? 'DRAW (TIME UP)' : `${winnerLabel} WON (${formatTime(match.timeRemaining)} LEFT)`;
-                  controlsHtml = `<div style="color:var(--neon-green); font-weight:bold; font-size:12px; margin-bottom:5px;">${resText}</div>
+                  controlsHtml = `<div style="color:${winColor}; font-weight:bold; font-size:12px; margin-bottom:5px;">${resText}</div>
                                   <button class="btn-manage" onclick="redoMatch('${match.id}')" ${disabledAttr}>↻ REDO MATCH</button>`;
               } else {
                   if (game.activeMatchId === match.id) {
                       controlsHtml = `
-                          <button class="btn-primary" style="padding: 5px 10px; font-size: 11px;" onclick="declareWinner('${match.id}', 'A')">OFFENCE WINS</button>
-                          <button class="btn-manage" style="padding: 5px 10px; font-size: 11px; background:var(--red-gear); color:white;" onclick="abortMatch()">ABORT</button>
-                          <button class="btn-primary" style="padding: 5px 10px; font-size: 11px;" onclick="declareWinner('${match.id}', 'B')">DEFENCE WINS</button>
+                          <div style="display: flex; justify-content: center; gap: 8px; width: 100%;">
+                              <button style="background:var(--offence-color); color:black; font-weight:bold; font-family:'Orbitron', sans-serif; border:none; padding:8px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="declareWinner('${match.id}', 'A')">OFFENCE WIN</button>
+                              <button style="background:#484f58; color:white; font-weight:bold; font-family:'Orbitron', sans-serif; border:none; padding:8px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="abortMatch()">ABORT</button>
+                              <button style="background:var(--defence-color); color:black; font-weight:bold; font-family:'Orbitron', sans-serif; border:none; padding:8px 10px; border-radius:4px; font-size:11px; cursor:pointer;" onclick="declareWinner('${match.id}', 'B')">DEFENCE WIN</button>
+                          </div>
                       `;
                       html += `<tr class="active-match-row">`;
                   } else if (game.activeMatchId) {
@@ -508,7 +525,7 @@
           if (match.teamB_id === "BYE") {
               html += `
                   <td style="font-weight:bold; font-family: 'Orbitron', sans-serif;">#${index+1}</td>
-                  <td class="team-name" style="text-align: right; padding-right:15px; color: var(--neon-green);">${match.teamA_name}</td>
+                  <td class="team-name" style="text-align: right; padding-right:15px; color: ${aColor}; opacity: ${aOpacity};">${match.teamA_name}</td>
                   <td>${controlsHtml}</td>
                   <td class="team-name" style="text-align: left; padding-left:15px; color: #8b949e;">(BYE)</td>
               </tr>
@@ -516,9 +533,9 @@
           } else {
               html += `
                   <td style="font-weight:bold; font-family: 'Orbitron', sans-serif;">#${index+1}</td>
-                  <td class="team-name" style="text-align: right; padding-right:15px; color: ${aColor};">${match.teamA_name}</td>
+                  <td class="team-name" style="text-align: right; padding-right:15px; color: ${aColor}; opacity: ${aOpacity};">${match.teamA_name}</td>
                   <td>${controlsHtml}</td>
-                  <td class="team-name" style="text-align: left; padding-left:15px; color: ${bColor};">${match.teamB_name}</td>
+                  <td class="team-name" style="text-align: left; padding-left:15px; color: ${bColor}; opacity: ${bOpacity};">${match.teamB_name}</td>
               </tr>
               <tr class="divider-row"><td colspan="4"></td></tr>`;
           }
