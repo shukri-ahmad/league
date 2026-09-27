@@ -44,13 +44,15 @@
         .history-section-title { margin-top: 50px; margin-bottom: 10px; text-align: left; color: var(--league-accent); border-bottom: 1px solid #30363d; padding-bottom: 10px; font-size: 20px;}
         .match-divider td { background-color: #30363d; height: 1px; padding: 0; border: none; opacity: 0.5; }
         
-        .tie-badge { color: var(--red-gear); font-size: 11px; display: block; font-weight: bold; margin-top: 5px;}
+        .tie-badge { color: #f39c12; font-size: 11px; display: block; font-weight: bold; margin-top: 5px;}
         
         /* TIMER UI */
         .public-timer-container { display: none; text-align: center; background: #000; padding: 15px; border: 2px solid var(--league-accent); border-radius: 12px; margin-bottom: 25px; box-shadow: 0 0 30px rgba(0, 255, 136, 0.2); }
         .public-timer-display { font-size: 90px; font-family: 'Orbitron', sans-serif; color: var(--neon-green); font-weight: 900; text-shadow: 0 0 25px rgba(0,255,136,0.6); line-height: 1;}
         .public-timer-display.paused { color: #f39c12; text-shadow: 0 0 25px rgba(243, 156, 18, 0.6); }
         .public-timer-display.stopped { color: var(--red-gear); text-shadow: 0 0 25px rgba(231, 36, 41, 0.6); }
+        
+        .active-match-row { background: rgba(0, 255, 136, 0.05); }
     </style>
 </head>
 <body>
@@ -75,15 +77,15 @@
         <div id="publicTimeClock" class="public-timer-display">00:00</div>
     </div>
 
-    <p class="formula-text">RANKED BY: HIGHEST POINTS (WINS = 3, DRAWS = 1) ➔ LEAST BALLS LEFT</p>
+    <p class="formula-text">RANKED BY: POINTS (WIN = 3, DRAW = 1) ➔ TIE-BREAKER: TIME SAVED</p>
     
     <table>
         <thead>
             <tr>
-                <th>RANK</th>
-                <th>TEAM</th>
-                <th>POINTS</th>
-                <th>TOTAL BALLS LEFT</th>
+                <th style="width: 10%;">RANK</th>
+                <th style="text-align: left; padding-left: 20px;">TEAM</th>
+                <th style="width: 20%;">POINTS</th>
+                <th style="width: 30%;">TIME SAVED (TIE-BREAKER)</th>
             </tr>
         </thead>
         <tbody id="leaderboard-body"><tr><td colspan="4">AWAITING DATA...</td></tr></tbody>
@@ -114,6 +116,7 @@
   let unsubGameDoc = null;
   let unsubTeams = null;
   let unsubMatches = null;
+  let activeMatchIdGlobal = null;
 
   let audioCtx = null;
   function getAudioCtx() {
@@ -160,7 +163,7 @@
   let lastTickSecond = -1;
 
   function formatTime(ms) {
-      if (ms < 0) ms = 0;
+      if (ms <= 0) return "00:00";
       let totalSeconds = Math.floor(ms / 1000);
       let m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
       let s = (totalSeconds % 60).toString().padStart(2, '0');
@@ -229,6 +232,8 @@
       unsubGameDoc = onSnapshot(doc(db, "games", gameId), (docSnap) => {
           if (docSnap.exists()) {
               const gameData = docSnap.data();
+              activeMatchIdGlobal = gameData.activeMatchId;
+              
               if (gameData.timerState) {
                   document.getElementById("publicTimerUI").style.display = "block";
                   renderTimerUI(gameData);
@@ -237,6 +242,18 @@
                   }
               } else {
                   document.getElementById("publicTimerUI").style.display = "none";
+              }
+              
+              // Force matches re-render to highlight active match row
+              if(document.getElementById("matches-history-container").innerHTML.includes("table")) {
+                  let matchesRowList = document.querySelectorAll(".match-row");
+                  matchesRowList.forEach(row => {
+                      if(row.dataset.matchid === activeMatchIdGlobal) {
+                          row.classList.add("active-match-row");
+                      } else {
+                          row.classList.remove("active-match-row");
+                      }
+                  });
               }
           }
       });
@@ -248,21 +265,22 @@
             teams.push({ id: documentDoc.id, ...documentDoc.data() });
         });
 
+        // TIE-BREAKER LOGIC: Sort by Points, then by Total Time Remaining
         teams.sort((a, b) => {
             if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
-            return (a.balls || 0) - (b.balls || 0); 
+            return (b.totalTimeRemaining || 0) - (a.totalTimeRemaining || 0);
         });
 
         let currentRank = 1;
         teams.forEach((t, i) => {
             if (i > 0) {
                 let prev = teams[i-1];
-                if (prev.points !== t.points || prev.balls !== t.balls) currentRank = i + 1;
+                if (prev.points !== t.points || prev.totalTimeRemaining !== t.totalTimeRemaining) currentRank = i + 1;
             }
             t.rank = currentRank;
             
-            let tiedWithPrev = (i > 0 && teams[i-1].points === t.points && teams[i-1].balls === t.balls);
-            let tiedWithNext = (i < teams.length - 1 && teams[i+1].points === t.points && teams[i+1].balls === t.balls);
+            let tiedWithPrev = (i > 0 && teams[i-1].points === t.points && teams[i-1].totalTimeRemaining === t.totalTimeRemaining);
+            let tiedWithNext = (i < teams.length - 1 && teams[i+1].points === t.points && teams[i+1].totalTimeRemaining === t.totalTimeRemaining);
             t.isTied = tiedWithPrev || tiedWithNext;
         });
         
@@ -271,14 +289,15 @@
         if (teams.length === 0) return tbody.innerHTML = "<tr><td colspan='4'>NO TEAMS REGISTERED.</td></tr>";
 
         teams.forEach((team, index) => {
-          let tieHTML = team.isTied ? `<span class="tie-badge">[TIE]</span>` : '';
+          let tieHTML = team.isTied ? `<span class="tie-badge">[ EXACT TIE ]</span>` : '';
+          let timeSavedText = team.totalTimeRemaining ? formatTime(team.totalTimeRemaining) : "00:00";
             
           tbody.innerHTML += `
-            <tr class="${index === 0 && (team.points > 0 || team.balls > 0) ? 'rank-1' : ''}">
+            <tr class="${index === 0 && team.points > 0 ? 'rank-1' : ''}">
               <td style="font-family: 'Orbitron', sans-serif; font-weight: 700; font-size: 1.2em;">${team.rank} ${tieHTML}</td>
               <td class="team-name">${team.name}</td>
               <td class="win-box">${team.points || 0}</td>
-              <td style="font-family: 'Orbitron', sans-serif; font-weight: bold;">${team.balls || 0}</td>
+              <td style="font-family: 'Orbitron', sans-serif; font-weight: bold;">+ ${timeSavedText}</td>
             </tr>`;
         });
       });
@@ -301,33 +320,31 @@
               currentMatchesList.push(match);
           });
 
-          // RENDER AS ONE CONTINUOUS TABLE
-          let html = `<table><thead><tr><th>MATCH</th><th>TEAM A</th><th>SCORE</th><th>TEAM B</th></tr></thead><tbody>`;
+          let html = `<table><thead><tr><th>MATCH</th><th style="text-align:right; padding-right:15px;">TEAM A</th><th>RESULT</th><th style="text-align:left; padding-left:15px;">TEAM B</th></tr></thead><tbody>`;
           
           currentMatchesList.forEach((match, index) => {
-              let aBalls = match.teamA_balls === null ? "-" : match.teamA_balls;
-              let bBalls = match.teamB_balls === null ? "-" : match.teamB_balls;
-              
-              let scoreRender = `<span style="color:#8b949e;">[ VS ]</span>`;
+              let scoreRender = `<span style="color:#8b949e;">[ PENDING ]</span>`;
               let aColor = "white", bColor = "white";
+              
+              let rowClass = (activeMatchIdGlobal === match.id) ? "match-row active-match-row" : "match-row";
 
-              if (match.teamA_balls !== null && match.teamB_balls !== null) {
-                  scoreRender = `<span style="font-weight:900;">${aBalls} - ${bBalls}</span>`;
-                  if (match.teamA_balls < match.teamB_balls) {
-                      aColor = "var(--neon-green)"; bColor = "var(--red-gear)";
-                  } else if (match.teamB_balls < match.teamA_balls) {
-                      aColor = "var(--red-gear)"; bColor = "var(--neon-green)";
-                  } else {
-                      aColor = "#f39c12"; bColor = "#f39c12";
-                  }
+              if (match.result === 'A') {
+                  scoreRender = `<span style="color:var(--neon-green); font-weight:bold;">A WINS<br><span style="font-size:12px; color:#8b949e;">(${formatTime(match.timeRemaining)} left)</span></span>`;
+                  aColor = "var(--neon-green)"; bColor = "var(--red-gear)";
+              } else if (match.result === 'B') {
+                  scoreRender = `<span style="color:var(--neon-green); font-weight:bold;">B WINS<br><span style="font-size:12px; color:#8b949e;">(${formatTime(match.timeRemaining)} left)</span></span>`;
+                  aColor = "var(--red-gear)"; bColor = "var(--neon-green)";
+              } else if (match.result === 'DRAW') {
+                  scoreRender = `<span style="color:#f39c12; font-weight:bold;">DRAW</span>`;
+                  aColor = "#f39c12"; bColor = "#f39c12";
               }
 
               html += `
-                  <tr>
+                  <tr class="${rowClass}" data-matchid="${match.id}">
                       <td style="font-family: 'Orbitron', sans-serif; font-weight: bold; width: 15%;">#${index+1}</td>
                       <td class="team-name" style="color: ${aColor}; width: 35%; text-align: right; padding-right:15px;">${match.teamA_name}</td>
-                      <td style="font-size: 1.2em; width: 15%;">${scoreRender}</td>
-                      <td class="team-name" style="color: ${bColor}; width: 35%;">${match.teamB_name}</td>
+                      <td style="font-size: 1.1em; width: 15%;">${scoreRender}</td>
+                      <td class="team-name" style="color: ${bColor}; width: 35%; padding-left:15px;">${match.teamB_name}</td>
                   </tr>
                   <tr class="match-divider"><td colspan="4"></td></tr>
               `;
