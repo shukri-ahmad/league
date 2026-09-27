@@ -244,7 +244,6 @@
                   document.getElementById("publicTimerUI").style.display = "none";
               }
               
-              // Force matches re-render to highlight active match row
               if(document.getElementById("matches-history-container").innerHTML.includes("table")) {
                   let matchesRowList = document.querySelectorAll(".match-row");
                   matchesRowList.forEach(row => {
@@ -265,7 +264,6 @@
             teams.push({ id: documentDoc.id, ...documentDoc.data() });
         });
 
-        // TIE-BREAKER LOGIC: Sort by Points, then by Total Time Remaining
         teams.sort((a, b) => {
             if ((b.points || 0) !== (a.points || 0)) return (b.points || 0) - (a.points || 0);
             return (b.totalTimeRemaining || 0) - (a.totalTimeRemaining || 0);
@@ -320,7 +318,7 @@
               currentMatchesList.push(match);
           });
 
-          let html = `<table><thead><tr><th>MATCH</th><th style="text-align:right; padding-right:15px;">TEAM A</th><th>RESULT</th><th style="text-align:left; padding-left:15px;">TEAM B</th></tr></thead><tbody>`;
+          let html = `<table><thead><tr><th>MATCH</th><th style="text-align:right; padding-right:15px;">OFFENCE</th><th>RESULT</th><th style="text-align:left; padding-left:15px;">DEFENCE</th></tr></thead><tbody>`;
           
           currentMatchesList.forEach((match, index) => {
               let scoreRender = `<span style="color:#8b949e;">[ PENDING ]</span>`;
@@ -329,10 +327,10 @@
               let rowClass = (activeMatchIdGlobal === match.id) ? "match-row active-match-row" : "match-row";
 
               if (match.result === 'A') {
-                  scoreRender = `<span style="color:var(--neon-green); font-weight:bold;">A WINS<br><span style="font-size:12px; color:#8b949e;">(${formatTime(match.timeRemaining)} left)</span></span>`;
+                  scoreRender = `<span style="color:var(--neon-green); font-weight:bold;">OFFENCE WINS<br><span style="font-size:12px; color:#8b949e;">(${formatTime(match.timeRemaining)} left)</span></span>`;
                   aColor = "var(--neon-green)"; bColor = "var(--red-gear)";
               } else if (match.result === 'B') {
-                  scoreRender = `<span style="color:var(--neon-green); font-weight:bold;">B WINS<br><span style="font-size:12px; color:#8b949e;">(${formatTime(match.timeRemaining)} left)</span></span>`;
+                  scoreRender = `<span style="color:var(--neon-green); font-weight:bold;">DEFENCE WINS<br><span style="font-size:12px; color:#8b949e;">(${formatTime(match.timeRemaining)} left)</span></span>`;
                   aColor = "var(--red-gear)"; bColor = "var(--neon-green)";
               } else if (match.result === 'DRAW') {
                   scoreRender = `<span style="color:#f39c12; font-weight:bold;">DRAW</span>`;
