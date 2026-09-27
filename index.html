@@ -16,6 +16,8 @@
             --border-glow: #1f4179;
             --text-main: #c9d1d9;
             --neon-green: #00ff88;
+            --offence-color: #00d2ff;
+            --defence-color: #ff9d00;
         }
 
         body { font-family: 'Rajdhani', sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 20px; background-image: radial-gradient(circle at 50% 0%, rgba(0, 255, 136, 0.05) 0%, transparent 50%); }
@@ -37,7 +39,7 @@
         .rank-1 { background: rgba(0, 255, 136, 0.1) !important; }
         .rank-1 td { color: #fff; font-weight: bold; text-shadow: 0 0 5px var(--league-accent); }
         
-        .team-name { font-weight: bold; text-align: left; padding-left: 20px; font-size: 1.2em; color: white;}
+        .team-name { font-weight: bold; text-align: left; padding-left: 20px; font-size: 1.2em; color: white; transition: opacity 0.3s;}
         .win-box { font-size: 1.2em; font-weight: bold; color: var(--league-accent); text-shadow: 0 0 8px rgba(0,255,136,0.4); }
         .formula-text { text-align: center; font-size: 14px; color: #8b949e; margin-top: -10px; margin-bottom: 20px; font-weight: bold;}
         
@@ -318,31 +320,35 @@
               currentMatchesList.push(match);
           });
 
-          let html = `<table><thead><tr><th>MATCH</th><th style="text-align:right; padding-right:15px;">OFFENCE</th><th>RESULT</th><th style="text-align:left; padding-left:15px;">DEFENCE</th></tr></thead><tbody>`;
+          let html = `<table><thead><tr><th>MATCH</th><th style="text-align:right; padding-right:15px; color: var(--offence-color);">OFFENCE</th><th>RESULT</th><th style="text-align:left; padding-left:15px; color: var(--defence-color);">DEFENCE</th></tr></thead><tbody>`;
           
           currentMatchesList.forEach((match, index) => {
               let scoreRender = `<span style="color:#8b949e;">[ PENDING ]</span>`;
-              let aColor = "white", bColor = "white";
+              let aColor = "var(--offence-color)";
+              let bColor = "var(--defence-color)";
+              
+              let aOpacity = match.result === 'B' ? "0.3" : "1";
+              let bOpacity = match.result === 'A' ? "0.3" : "1";
+              if (match.result === 'DRAW') {
+                  aOpacity = "0.7"; bOpacity = "0.7";
+              }
               
               let rowClass = (activeMatchIdGlobal === match.id) ? "match-row active-match-row" : "match-row";
 
               if (match.result === 'A') {
-                  scoreRender = `<span style="color:var(--neon-green); font-weight:bold;">OFFENCE WINS<br><span style="font-size:12px; color:#8b949e;">(${formatTime(match.timeRemaining)} left)</span></span>`;
-                  aColor = "var(--neon-green)"; bColor = "var(--red-gear)";
+                  scoreRender = `<span style="color:var(--offence-color); font-weight:bold;">OFFENCE WINS<br><span style="font-size:12px; color:#8b949e;">(${formatTime(match.timeRemaining)} left)</span></span>`;
               } else if (match.result === 'B') {
-                  scoreRender = `<span style="color:var(--neon-green); font-weight:bold;">DEFENCE WINS<br><span style="font-size:12px; color:#8b949e;">(${formatTime(match.timeRemaining)} left)</span></span>`;
-                  aColor = "var(--red-gear)"; bColor = "var(--neon-green)";
+                  scoreRender = `<span style="color:var(--defence-color); font-weight:bold;">DEFENCE WINS<br><span style="font-size:12px; color:#8b949e;">(${formatTime(match.timeRemaining)} left)</span></span>`;
               } else if (match.result === 'DRAW') {
                   scoreRender = `<span style="color:#f39c12; font-weight:bold;">DRAW</span>`;
-                  aColor = "#f39c12"; bColor = "#f39c12";
               }
 
               html += `
                   <tr class="${rowClass}" data-matchid="${match.id}">
                       <td style="font-family: 'Orbitron', sans-serif; font-weight: bold; width: 15%;">#${index+1}</td>
-                      <td class="team-name" style="color: ${aColor}; width: 35%; text-align: right; padding-right:15px;">${match.teamA_name}</td>
+                      <td class="team-name" style="color: ${aColor}; opacity: ${aOpacity}; width: 35%; text-align: right; padding-right:15px;">${match.teamA_name}</td>
                       <td style="font-size: 1.1em; width: 15%;">${scoreRender}</td>
-                      <td class="team-name" style="color: ${bColor}; width: 35%; padding-left:15px;">${match.teamB_name}</td>
+                      <td class="team-name" style="color: ${bColor}; opacity: ${bOpacity}; width: 35%; padding-left:15px;">${match.teamB_name}</td>
                   </tr>
                   <tr class="match-divider"><td colspan="4"></td></tr>
               `;
